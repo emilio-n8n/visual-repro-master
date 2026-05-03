@@ -41,6 +41,56 @@ export type Database = {
         }
         Relationships: []
       }
+      renders: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          input_path: string
+          output_path: string | null
+          prompt: string | null
+          status: string
+          style: string | null
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          input_path: string
+          output_path?: string | null
+          prompt?: string | null
+          status?: string
+          style?: string | null
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          input_path?: string
+          output_path?: string | null
+          prompt?: string | null
+          status?: string
+          style?: string | null
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renders_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string

@@ -9,6 +9,7 @@ import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import DashboardLayout from "./pages/dashboard/DashboardLayout.tsx";
 import Overview from "./pages/dashboard/Overview.tsx";
+import Render from "./pages/dashboard/Render.tsx";
 import Placeholder from "./pages/dashboard/Placeholder.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -33,15 +34,7 @@ const App = () => (
               }
             >
               <Route index element={<Overview />} />
-              <Route
-                path="render"
-                element={
-                  <Placeholder
-                    title="FORMA Render AI"
-                    description="Transformez vos rendus 3D en images photoréalistes."
-                  />
-                }
-              />
+              <Route path="render" element={<Render />} />
               <Route
                 path="agent"
                 element={
