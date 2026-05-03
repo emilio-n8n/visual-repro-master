@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Send, Plus, MessageSquare, Loader2 } from "lucide-react";
+import { ArtifactPreview } from "@/components/ArtifactPreview";
 
 type Conversation = { id: string; title: string; created_at: string };
 type Message = {
@@ -13,6 +14,7 @@ type Message = {
   role: "user" | "assistant" | "tool" | "system";
   content: string;
   tool_calls?: any;
+  artifactIds?: string[];
 };
 
 export default function Agent() {
