@@ -174,11 +174,20 @@ export default function Agent() {
               setMessages((prev) =>
                 prev.map((m) => (m.id === assistantId ? { ...m, content: assistantContent } : m))
               );
-            } else if (parsed.type === "tool_result" && parsed.name === "create_render") {
-              toast({
-                title: "Rendu lancé",
-                description: "Consultez Render AI pour le suivre.",
-              });
+            } else if (parsed.type === "tool_result") {
+              if (parsed.name === "create_render") {
+                toast({ title: "Rendu lancé", description: "Consultez Render AI." });
+              } else if (parsed.result?.artifactId) {
+                const aId = parsed.result.artifactId;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId
+                      ? { ...m, artifactIds: [...(m.artifactIds ?? []), aId] }
+                      : m
+                  )
+                );
+                toast({ title: "Livrable prêt", description: parsed.result.title });
+              }
             }
           } catch {
             buffer = line + "\n" + buffer;
