@@ -10,6 +10,7 @@ import Auth from "./pages/Auth.tsx";
 import DashboardLayout from "./pages/dashboard/DashboardLayout.tsx";
 import Overview from "./pages/dashboard/Overview.tsx";
 import Render from "./pages/dashboard/Render.tsx";
+import Agent from "./pages/dashboard/Agent.tsx";
 import Placeholder from "./pages/dashboard/Placeholder.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -35,15 +36,7 @@ const App = () => (
             >
               <Route index element={<Overview />} />
               <Route path="render" element={<Render />} />
-              <Route
-                path="agent"
-                element={
-                  <Placeholder
-                    title="FORMA Agent"
-                    description="Votre assistant IA pour l'architecture."
-                  />
-                }
-              />
+              <Route path="agent" element={<Agent />} />
               <Route
                 path="settings"
                 element={
