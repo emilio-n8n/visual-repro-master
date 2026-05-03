@@ -290,101 +290,110 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: apiMessages,
-        tools,
-        stream: true,
-      }),
-    });
-
-    if (!aiResp.ok) {
-      if (aiResp.status === 429) {
-        return new Response(JSON.stringify({ error: "Trop de requêtes." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (aiResp.status === 402) {
-        return new Response(JSON.stringify({ error: "Crédits AI épuisés." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await aiResp.text();
-      console.error("AI error", aiResp.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
     const stream = new ReadableStream({
       async start(controller) {
-        const reader = aiResp.body!.getReader();
-        let buffer = "";
-        let assistantContent = "";
-        let toolCallsMap: Record<number, any> = {};
-        let done = false;
-
-        while (!done) {
-          const { value, done: rDone } = await reader.read();
-          if (rDone) break;
-          buffer += decoder.decode(value, { stream: true });
-
-          let nl: number;
-          while ((nl = buffer.indexOf("\n")) !== -1) {
-            let line = buffer.slice(0, nl);
-            buffer = buffer.slice(nl + 1);
-            if (line.endsWith("\r")) line = line.slice(0, -1);
-            if (!line.startsWith("data: ")) continue;
-            const data = line.slice(6).trim();
-            if (data === "[DONE]") { done = true; break; }
-            try {
-              const parsed = JSON.parse(data);
-              const delta = parsed.choices?.[0]?.delta;
-              if (delta?.content) {
-                assistantContent += delta.content;
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "delta", content: delta.content })}\n\n`));
-              }
-              if (delta?.tool_calls) {
-                for (const tc of delta.tool_calls) {
-                  const idx = tc.index ?? 0;
-                  if (!toolCallsMap[idx]) {
-                    toolCallsMap[idx] = { id: tc.id, type: "function", function: { name: "", arguments: "" } };
-                  }
-                  if (tc.id) toolCallsMap[idx].id = tc.id;
-                  if (tc.function?.name) toolCallsMap[idx].function.name += tc.function.name;
-                  if (tc.function?.arguments) toolCallsMap[idx].function.arguments += tc.function.arguments;
-                }
-              }
-            } catch {
-              buffer = line + "\n" + buffer;
-              break;
-            }
-          }
-        }
-
-        const toolCalls = Object.values(toolCallsMap);
-
-        await supabase.from("messages").insert({
-          conversation_id: conversationId,
-          user_id: user.id,
-          role: "assistant",
-          content: assistantContent,
-          tool_calls: toolCalls.length ? toolCalls : null,
-        });
+        const safeEnqueue = (s: string) => {
+          try { controller.enqueue(encoder.encode(s)); } catch {}
+        };
 
         const { data: ws } = await supabase
           .from("workspaces").select("id").limit(1).maybeSingle();
 
-        for (const tc of toolCalls) {
+        try {
+          const MAX_TURNS = 5;
+          for (let turn = 0; turn < MAX_TURNS; turn++) {
+            const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: "google/gemini-2.5-flash",
+                messages: apiMessages,
+                tools,
+                stream: true,
+              }),
+            });
+
+            if (!aiResp.ok || !aiResp.body) {
+              const t = await aiResp.text().catch(() => "");
+              console.error("AI error", aiResp.status, t);
+              const msg = aiResp.status === 429
+                ? "Trop de requêtes, réessayez dans un instant."
+                : aiResp.status === 402
+                  ? "Crédits AI épuisés."
+                  : "Erreur de la passerelle AI.";
+              safeEnqueue(`data: ${JSON.stringify({ type: "error", error: msg })}\n\n`);
+              break;
+            }
+
+            const reader = aiResp.body.getReader();
+            let buffer = "";
+            let assistantContent = "";
+            let toolCallsMap: Record<number, any> = {};
+            let done = false;
+
+            while (!done) {
+              const { value, done: rDone } = await reader.read();
+              if (rDone) break;
+              buffer += decoder.decode(value, { stream: true });
+
+              let nl: number;
+              while ((nl = buffer.indexOf("\n")) !== -1) {
+                let line = buffer.slice(0, nl);
+                buffer = buffer.slice(nl + 1);
+                if (line.endsWith("\r")) line = line.slice(0, -1);
+                if (!line.startsWith("data: ")) continue;
+                const data = line.slice(6).trim();
+                if (data === "[DONE]") { done = true; break; }
+                try {
+                  const parsed = JSON.parse(data);
+                  const delta = parsed.choices?.[0]?.delta;
+                  if (delta?.content) {
+                    assistantContent += delta.content;
+                    safeEnqueue(`data: ${JSON.stringify({ type: "delta", content: delta.content })}\n\n`);
+                  }
+                  if (delta?.tool_calls) {
+                    for (const tc of delta.tool_calls) {
+                      const idx = tc.index ?? 0;
+                      if (!toolCallsMap[idx]) {
+                        toolCallsMap[idx] = { id: tc.id, type: "function", function: { name: "", arguments: "" } };
+                      }
+                      if (tc.id) toolCallsMap[idx].id = tc.id;
+                      if (tc.function?.name) toolCallsMap[idx].function.name += tc.function.name;
+                      if (tc.function?.arguments) toolCallsMap[idx].function.arguments += tc.function.arguments;
+                    }
+                  }
+                } catch {
+                  buffer = line + "\n" + buffer;
+                  break;
+                }
+              }
+            }
+
+            const toolCalls = Object.values(toolCallsMap);
+
+            await supabase.from("messages").insert({
+              conversation_id: conversationId,
+              user_id: user.id,
+              role: "assistant",
+              content: assistantContent,
+              tool_calls: toolCalls.length ? toolCalls : null,
+            });
+
+            apiMessages.push({
+              role: "assistant",
+              content: assistantContent,
+              ...(toolCalls.length ? { tool_calls: toolCalls } : {}),
+            });
+
+            if (!toolCalls.length) break;
+
+            for (const tc of toolCalls) {
           const name = tc.function.name;
           let result: any = { ok: false };
           try {
