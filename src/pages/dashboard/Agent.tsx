@@ -52,10 +52,29 @@ export default function Agent() {
   async function loadMessages(id: string) {
     const { data } = await supabase
       .from("messages")
-      .select("id, role, content, tool_calls")
+      .select("id, role, content, tool_calls, tool_call_id, created_at")
       .eq("conversation_id", id)
       .order("created_at");
-    setMessages((data ?? []) as Message[]);
+    const all = (data ?? []) as any[];
+    // Collect artifact ids per assistant message via subsequent tool messages
+    const result: Message[] = [];
+    for (let i = 0; i < all.length; i++) {
+      const m = all[i];
+      if (m.role === "tool") continue;
+      const msg: Message = { id: m.id, role: m.role, content: m.content, tool_calls: m.tool_calls };
+      if (m.role === "assistant" && m.tool_calls?.length) {
+        const ids: string[] = [];
+        for (let j = i + 1; j < all.length && all[j].role === "tool"; j++) {
+          try {
+            const r = JSON.parse(all[j].content);
+            if (r?.artifactId) ids.push(r.artifactId);
+          } catch {}
+        }
+        if (ids.length) msg.artifactIds = ids;
+      }
+      result.push(msg);
+    }
+    setMessages(result);
   }
 
   async function newConversation() {
