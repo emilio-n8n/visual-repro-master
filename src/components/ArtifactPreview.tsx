@@ -1,28 +1,34 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Download, ExternalLink, FileSpreadsheet, LayoutGrid, BarChart3, Globe, Loader2 } from "lucide-react";
+import { Download, ExternalLink, FileSpreadsheet, LayoutGrid, BarChart3, Globe, Loader2, FileText, Images } from "lucide-react";
+
+type ArtifactType = "slideshow" | "spreadsheet" | "dataviz" | "website" | "document" | "moodboard";
 
 type Artifact = {
   id: string;
-  type: "slideshow" | "spreadsheet" | "dataviz" | "website";
+  type: ArtifactType;
   title: string;
   content: string;
   mime_type: string;
 };
 
-const ICONS = {
+const ICONS: Record<ArtifactType, any> = {
   slideshow: LayoutGrid,
   spreadsheet: FileSpreadsheet,
   dataviz: BarChart3,
   website: Globe,
+  document: FileText,
+  moodboard: Images,
 };
 
-const LABELS = {
+const LABELS: Record<ArtifactType, string> = {
   slideshow: "Diaporama",
   spreadsheet: "Tableur",
   dataviz: "Visualisation",
   website: "Site web",
+  document: "Document",
+  moodboard: "Moodboard",
 };
 
 export function ArtifactPreview({ artifactId }: { artifactId: string }) {
@@ -95,6 +101,8 @@ export function ArtifactPreview({ artifactId }: { artifactId: string }) {
 
       {a.type === "spreadsheet" ? (
         <CsvTable csv={a.content} />
+      ) : a.type === "moodboard" ? (
+        <MoodboardView content={a.content} />
       ) : (
         <iframe
           srcDoc={a.content}
@@ -103,6 +111,64 @@ export function ArtifactPreview({ artifactId }: { artifactId: string }) {
           className="w-full h-[420px] bg-white"
         />
       )}
+    </div>
+  );
+}
+
+function MoodboardView({ content }: { content: string }) {
+  const [renders, setRenders] = useState<any[]>([]);
+  let parsed: { renderIds: string[]; prompts: string[] } = { renderIds: [], prompts: [] };
+  try { parsed = JSON.parse(content); } catch {}
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      if (!parsed.renderIds.length) return;
+      const { data } = await supabase
+        .from("renders")
+        .select("id, status, output_path, prompt")
+        .in("id", parsed.renderIds);
+      if (!active || !data) return;
+      const withUrls = await Promise.all(
+        data.map(async (r: any) => {
+          if (r.output_path) {
+            const { data: signed } = await supabase.storage
+              .from("render-outputs")
+              .createSignedUrl(r.output_path, 3600);
+            return { ...r, url: signed?.signedUrl };
+          }
+          return r;
+        })
+      );
+      setRenders(withUrls);
+    }
+    load();
+    const ch = supabase
+      .channel(`moodboard-${parsed.renderIds.join("-")}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "renders" }, () => load())
+      .subscribe();
+    return () => { active = false; supabase.removeChannel(ch); };
+  }, [content]);
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-3 bg-black/40">
+      {parsed.renderIds.map((id, i) => {
+        const r = renders.find((x) => x.id === id);
+        return (
+          <div key={id} className="aspect-square bg-black/60 border border-[#C4A264]/15 overflow-hidden relative">
+            {r?.url ? (
+              <img src={r.url} alt={r.prompt} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-[#C4A264]/60 text-xs">
+                <Loader2 className="w-4 h-4 animate-spin" />
+              </div>
+            )}
+            <div className="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/80 to-transparent text-[10px] text-[#F0EAE0]/80 line-clamp-2">
+              {parsed.prompts[i]}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

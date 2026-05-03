@@ -1,0 +1,2 @@
+ALTER TABLE public.artifacts DROP CONSTRAINT IF EXISTS artifacts_type_check;
+ALTER TABLE public.artifacts ADD CONSTRAINT artifacts_type_check CHECK (type = ANY (ARRAY['slideshow','spreadsheet','dataviz','website','document','moodboard']));

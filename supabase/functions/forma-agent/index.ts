@@ -23,9 +23,15 @@ OUTILS DISPONIBLES — utilise-les dès que pertinent, sans demander confirmatio
 - create_spreadsheet : crée un tableur. Fournis un CSV propre (séparateur virgule, première ligne = entêtes).
 - create_dataviz : crée une visualisation. Fournis un document HTML complet et autonome (avec <html>, <head>, <body>) embarquant Chart.js via CDN OU du SVG inline. Les données doivent être visibles immédiatement.
 - create_website : crée un mini-site one-page. Fournis un document HTML complet et autonome, responsive, avec styles inline ou <style> dans le <head>.
+- create_document : crée un document long format (rapport, note de cadrage, mémoire technique). Fournis un HTML complet, mise en page A4, typographie soignée.
+- create_moodboard : crée une planche d'ambiance composée de 3 à 6 visuels générés à partir de prompts distincts (chaque prompt = un rendu IA), assemblés dans un layout HTML élégant.
+- web_search : interroge le web (DuckDuckGo) pour obtenir des résultats récents (titres + extraits + URLs). À utiliser dès qu'une question requiert des infos d'actualité, prix, références produits, normes, tendances.
+- fetch_url : récupère le contenu textuel d'une page web (article, fiche produit, doc technique). À combiner avec web_search pour approfondir une source.
+- calculate : évalue une expression mathématique (devis, surfaces, ratios, conversions). Utilise-le plutôt que de calculer toi-même.
 
 Règles de qualité :
 - HTML toujours complet et auto-suffisant (pas de dépendances locales).
+- Pour toute info récente, factuelle ou chiffrée externe : utilise web_search puis fetch_url. Cite les sources dans ta réponse.
 - Réponse textuelle : annonce brièvement ce que tu produis, puis appelle l'outil. N'inclus PAS le HTML/CSV dans le texte.`;
 
 const tools = [
@@ -108,6 +114,81 @@ const tools = [
           html: { type: "string", description: "Document HTML complet et autonome." },
         },
         required: ["title", "html"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_document",
+      description: "Crée un document long format (HTML mise en page A4).",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          html: { type: "string", description: "Document HTML complet, mise en page A4." },
+        },
+        required: ["title", "html"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_moodboard",
+      description: "Crée une planche d'ambiance avec 3 à 6 visuels IA.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          style: { type: "string", enum: ["photoreal", "twilight", "scandi", "editorial"] },
+          prompts: { type: "array", items: { type: "string" } },
+        },
+        required: ["title", "style", "prompts"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "web_search",
+      description: "Recherche web (DuckDuckGo). Renvoie titres, extraits, URLs.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string" },
+          max_results: { type: "number" },
+        },
+        required: ["query"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "fetch_url",
+      description: "Récupère le contenu textuel d'une page web.",
+      parameters: {
+        type: "object",
+        properties: { url: { type: "string" } },
+        required: ["url"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "calculate",
+      description: "Évalue une expression mathématique.",
+      parameters: {
+        type: "object",
+        properties: { expression: { type: "string" } },
+        required: ["expression"],
         additionalProperties: false,
       },
     },
@@ -342,16 +423,78 @@ Deno.serve(async (req) => {
               }).select().single();
               if (error) throw error;
               result = { ok: true, kind: "spreadsheet", artifactId: a.id, title: a.title };
-            } else if (name === "create_dataviz" || name === "create_website") {
+            } else if (name === "create_dataviz" || name === "create_website" || name === "create_document") {
+              const t = name === "create_dataviz" ? "dataviz" : name === "create_website" ? "website" : "document";
               const { data: a, error } = await supabase.from("artifacts").insert({
                 user_id: user.id, workspace_id: ws?.id ?? null,
-                type: name === "create_dataviz" ? "dataviz" : "website",
-                title: args.title || (name === "create_dataviz" ? "Visualisation" : "Site"),
+                type: t,
+                title: args.title || (t === "dataviz" ? "Visualisation" : t === "website" ? "Site" : "Document"),
                 content: args.html || "", mime_type: "text/html",
               }).select().single();
               if (error) throw error;
-              result = { ok: true, kind: name === "create_dataviz" ? "dataviz" : "website", artifactId: a.id, title: a.title };
+              result = { ok: true, kind: t, artifactId: a.id, title: a.title };
+            } else if (name === "create_moodboard") {
+              const prompts: string[] = (args.prompts || []).slice(0, 6);
+              const renderIds: string[] = [];
+              for (const p of prompts) {
+                const { data: r, error } = await supabase.from("renders").insert({
+                  user_id: user.id, workspace_id: ws?.id ?? null,
+                  status: "pending", prompt: p, style: args.style || "photoreal",
+                  input_path: "agent://text-only",
+                }).select().single();
+                if (error) throw error;
+                renderIds.push(r.id);
+                fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/forma-render`, {
+                  method: "POST",
+                  headers: { Authorization: authHeader, "Content-Type": "application/json" },
+                  body: JSON.stringify({ renderId: r.id }),
+                }).catch((e) => console.error("forma-render trigger", e));
+              }
+              const { data: a, error: aerr } = await supabase.from("artifacts").insert({
+                user_id: user.id, workspace_id: ws?.id ?? null,
+                type: "moodboard", title: args.title || "Moodboard",
+                content: JSON.stringify({ renderIds, prompts, style: args.style }),
+                mime_type: "application/json",
+              }).select().single();
+              if (aerr) throw aerr;
+              result = { ok: true, kind: "moodboard", artifactId: a.id, title: a.title, renderIds };
+            } else if (name === "web_search") {
+              const q = encodeURIComponent(args.query || "");
+              const max = Math.min(10, args.max_results || 5);
+              const r = await fetch(`https://duckduckgo.com/html/?q=${q}`, {
+                headers: { "User-Agent": "Mozilla/5.0 FORMA Agent" },
+              });
+              const html = await r.text();
+              const items: any[] = [];
+              const re = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
+              let m: RegExpExecArray | null;
+              while ((m = re.exec(html)) && items.length < max) {
+                const url = decodeURIComponent(m[1].replace(/^.*uddg=/, "").split("&")[0]);
+                const title = m[2].replace(/<[^>]+>/g, "").trim();
+                const snippet = m[3].replace(/<[^>]+>/g, "").trim();
+                items.push({ title, url, snippet });
+              }
+              result = { ok: true, kind: "web_search", query: args.query, results: items };
+            } else if (name === "fetch_url") {
+              const r = await fetch(args.url, {
+                headers: { "User-Agent": "Mozilla/5.0 FORMA Agent" },
+              });
+              const html = await r.text();
+              const text = html
+                .replace(/<script[\s\S]*?<\/script>/gi, "")
+                .replace(/<style[\s\S]*?<\/style>/gi, "")
+                .replace(/<[^>]+>/g, " ")
+                .replace(/\s+/g, " ")
+                .trim()
+                .slice(0, 8000);
+              result = { ok: true, kind: "fetch_url", url: args.url, text };
+            } else if (name === "calculate") {
+              const expr = String(args.expression || "");
+              if (!/^[\d\s+\-*/().,%^]+$/.test(expr)) throw new Error("Expression invalide");
+              const val = Function(`"use strict";return (${expr.replace(/\^/g, "**").replace(/,/g, ".")})`)();
+              result = { ok: true, kind: "calculate", expression: expr, value: val };
             }
+
           } catch (e) {
             console.error("tool error", name, e);
             result = { ok: false, error: e instanceof Error ? e.message : "Unknown" };
