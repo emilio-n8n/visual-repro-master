@@ -177,6 +177,24 @@ export default function Agent() {
             } else if (parsed.type === "tool_result") {
               if (parsed.name === "create_render") {
                 toast({ title: "Rendu lancé", description: "Consultez Render AI." });
+              } else if (parsed.name === "create_moodboard") {
+                toast({ title: "Moodboard en cours", description: "Génération des visuels…" });
+                if (parsed.result?.artifactId) {
+                  const aId = parsed.result.artifactId;
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantId
+                        ? { ...m, artifactIds: [...(m.artifactIds ?? []), aId] }
+                        : m
+                    )
+                  );
+                }
+              } else if (parsed.name === "web_search") {
+                toast({ title: "Recherche web", description: `${parsed.result?.results?.length ?? 0} résultats` });
+              } else if (parsed.name === "fetch_url") {
+                toast({ title: "Page récupérée" });
+              } else if (parsed.name === "calculate") {
+                toast({ title: "Calcul", description: String(parsed.result?.value ?? "") });
               } else if (parsed.result?.artifactId) {
                 const aId = parsed.result.artifactId;
                 setMessages((prev) =>
