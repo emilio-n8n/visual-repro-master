@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Send, Plus, MessageSquare, Loader2 } from "lucide-react";
+import { ArtifactPreview } from "@/components/ArtifactPreview";
 
 type Conversation = { id: string; title: string; created_at: string };
 type Message = {
@@ -13,6 +14,7 @@ type Message = {
   role: "user" | "assistant" | "tool" | "system";
   content: string;
   tool_calls?: any;
+  artifactIds?: string[];
 };
 
 export default function Agent() {
@@ -50,10 +52,29 @@ export default function Agent() {
   async function loadMessages(id: string) {
     const { data } = await supabase
       .from("messages")
-      .select("id, role, content, tool_calls")
+      .select("id, role, content, tool_calls, tool_call_id, created_at")
       .eq("conversation_id", id)
       .order("created_at");
-    setMessages((data ?? []) as Message[]);
+    const all = (data ?? []) as any[];
+    // Collect artifact ids per assistant message via subsequent tool messages
+    const result: Message[] = [];
+    for (let i = 0; i < all.length; i++) {
+      const m = all[i];
+      if (m.role === "tool") continue;
+      const msg: Message = { id: m.id, role: m.role, content: m.content, tool_calls: m.tool_calls };
+      if (m.role === "assistant" && m.tool_calls?.length) {
+        const ids: string[] = [];
+        for (let j = i + 1; j < all.length && all[j].role === "tool"; j++) {
+          try {
+            const r = JSON.parse(all[j].content);
+            if (r?.artifactId) ids.push(r.artifactId);
+          } catch {}
+        }
+        if (ids.length) msg.artifactIds = ids;
+      }
+      result.push(msg);
+    }
+    setMessages(result);
   }
 
   async function newConversation() {
@@ -153,11 +174,20 @@ export default function Agent() {
               setMessages((prev) =>
                 prev.map((m) => (m.id === assistantId ? { ...m, content: assistantContent } : m))
               );
-            } else if (parsed.type === "tool_result" && parsed.name === "create_render") {
-              toast({
-                title: "Rendu lancé",
-                description: "Consultez Render AI pour le suivre.",
-              });
+            } else if (parsed.type === "tool_result") {
+              if (parsed.name === "create_render") {
+                toast({ title: "Rendu lancé", description: "Consultez Render AI." });
+              } else if (parsed.result?.artifactId) {
+                const aId = parsed.result.artifactId;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId
+                      ? { ...m, artifactIds: [...(m.artifactIds ?? []), aId] }
+                      : m
+                  )
+                );
+                toast({ title: "Livrable prêt", description: parsed.result.title });
+              }
             }
           } catch {
             buffer = line + "\n" + buffer;
@@ -237,18 +267,23 @@ export default function Agent() {
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[75%] px-4 py-3 rounded-sm text-sm ${
+                  className={`px-4 py-3 rounded-sm text-sm ${
                     m.role === "user"
-                      ? "bg-[#C4A264]/15 text-[#F0EAE0] border border-[#C4A264]/20"
-                      : "bg-white/[0.03] text-[#F0EAE0]/90 border border-white/5"
+                      ? "max-w-[75%] bg-[#C4A264]/15 text-[#F0EAE0] border border-[#C4A264]/20"
+                      : "max-w-[85%] w-full bg-white/[0.03] text-[#F0EAE0]/90 border border-white/5"
                   }`}
                 >
-                  <div className="prose prose-sm prose-invert max-w-none prose-p:my-2 prose-headings:text-[#C4A264]">
-                    <ReactMarkdown>{m.content || (loading ? "…" : "")}</ReactMarkdown>
-                  </div>
-                  {m.tool_calls && (
+                  {m.content && (
+                    <div className="prose prose-sm prose-invert max-w-none prose-p:my-2 prose-headings:text-[#C4A264]">
+                      <ReactMarkdown>{m.content}</ReactMarkdown>
+                    </div>
+                  )}
+                  {m.artifactIds?.map((id) => (
+                    <ArtifactPreview key={id} artifactId={id} />
+                  ))}
+                  {m.tool_calls && !m.artifactIds?.length && m.role === "assistant" && (
                     <div className="mt-2 text-xs text-[#C4A264]/70 italic">
-                      ⚡ Outil utilisé : {m.tool_calls[0]?.function?.name}
+                      ⚡ Outil : {m.tool_calls[0]?.function?.name}…
                     </div>
                   )}
                 </div>
