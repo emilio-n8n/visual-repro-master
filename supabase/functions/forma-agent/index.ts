@@ -13,38 +13,142 @@ Ton rôle :
 - Aider à formuler des prompts pour la génération de rendus photoréalistes.
 - Conseiller sur les ambiances (Photoréaliste, Twilight, Scandinave, Éditorial).
 - Proposer des palettes de matériaux, lumière, mobilier.
-- Expliquer comment utiliser FORMA Render AI (upload de rendu 3D brut → photoréalisme).
+- Produire des livrables clients : diaporamas, tableurs, visualisations de données, mini-sites.
 
 Style : élégant, précis, concis. Vouvoiement. Français par défaut.
 
-Tu peux générer des rendus directement via l'outil "create_render". Quand l'utilisateur demande une image / un rendu / une variante, utilise cet outil avec un prompt riche et une style ('photoreal' | 'twilight' | 'scandi' | 'editorial').`;
+OUTILS DISPONIBLES — utilise-les dès que pertinent, sans demander confirmation :
+- create_render : génère une image / rendu IA (style: photoreal, twilight, scandi, editorial).
+- create_slideshow : crée un diaporama. Tu fournis un tableau de slides, chacune codée en HTML complet (un <section> autonome avec styles inline, ratio 16:9). Soigne la typo (Cormorant Garamond pour les titres, Inter pour le texte), respecte une charte sobre et premium (or #C4A264, ivoire #F0EAE0, fond sombre #0b0b0b ou clair #faf7f2 selon le contexte).
+- create_spreadsheet : crée un tableur. Fournis un CSV propre (séparateur virgule, première ligne = entêtes).
+- create_dataviz : crée une visualisation. Fournis un document HTML complet et autonome (avec <html>, <head>, <body>) embarquant Chart.js via CDN OU du SVG inline. Les données doivent être visibles immédiatement.
+- create_website : crée un mini-site one-page. Fournis un document HTML complet et autonome, responsive, avec styles inline ou <style> dans le <head>.
+
+Règles de qualité :
+- HTML toujours complet et auto-suffisant (pas de dépendances locales).
+- Réponse textuelle : annonce brièvement ce que tu produis, puis appelle l'outil. N'inclus PAS le HTML/CSV dans le texte.`;
 
 const tools = [
   {
     type: "function",
     function: {
       name: "create_render",
-      description:
-        "Lance un nouveau rendu IA FORMA à partir d'un prompt textuel uniquement (sans image source). Utile pour explorer une ambiance ou une palette.",
+      description: "Lance un rendu IA FORMA à partir d'un prompt textuel.",
       parameters: {
         type: "object",
         properties: {
-          prompt: {
-            type: "string",
-            description: "Description détaillée de la scène à générer.",
-          },
-          style: {
-            type: "string",
-            enum: ["photoreal", "twilight", "scandi", "editorial"],
-            description: "Style visuel.",
-          },
+          prompt: { type: "string" },
+          style: { type: "string", enum: ["photoreal", "twilight", "scandi", "editorial"] },
         },
         required: ["prompt", "style"],
         additionalProperties: false,
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "create_slideshow",
+      description: "Crée un diaporama. Chaque slide = un fragment HTML (section) autonome.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          slides: {
+            type: "array",
+            items: { type: "string", description: "HTML complet d'une slide (section autonome)." },
+          },
+        },
+        required: ["title", "slides"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_spreadsheet",
+      description: "Crée un tableur (CSV).",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          csv: { type: "string", description: "CSV complet, première ligne = entêtes." },
+        },
+        required: ["title", "csv"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_dataviz",
+      description: "Crée une visualisation de données (HTML autonome avec Chart.js ou SVG).",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          html: { type: "string", description: "Document HTML complet et autonome." },
+        },
+        required: ["title", "html"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_website",
+      description: "Crée un mini-site one-page (HTML autonome).",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          html: { type: "string", description: "Document HTML complet et autonome." },
+        },
+        required: ["title", "html"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
+
+function wrapSlideshow(title: string, slides: string[]): string {
+  const slidesHtml = slides
+    .map(
+      (s, i) => `<article class="slide" data-i="${i}"><div class="slide-inner">${s}</div></article>`
+    )
+    .join("\n");
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${title}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#0b0b0b;color:#F0EAE0;font-family:Inter,sans-serif;height:100%;overflow:hidden}
+.deck{height:100vh;display:flex;align-items:center;justify-content:center;position:relative}
+.slide{display:none;width:min(95vw,1600px);aspect-ratio:16/9;background:#faf7f2;color:#1a1a1a;border-radius:4px;box-shadow:0 30px 80px rgba(0,0,0,.5);overflow:hidden;position:relative}
+.slide.active{display:block}
+.slide-inner{width:100%;height:100%;padding:64px;display:flex;flex-direction:column;justify-content:center;font-family:Inter,sans-serif}
+.slide-inner h1,.slide-inner h2,.slide-inner h3{font-family:'Cormorant Garamond',serif;font-weight:500;color:#1a1a1a;margin-bottom:24px}
+.slide-inner h1{font-size:64px;letter-spacing:-.02em}
+.slide-inner h2{font-size:44px}
+.slide-inner p,.slide-inner li{font-size:20px;line-height:1.6;color:#333;margin-bottom:12px}
+.slide-inner ul,.slide-inner ol{padding-left:24px}
+.nav{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center;background:rgba(0,0,0,.6);padding:8px 16px;border-radius:999px;border:1px solid rgba(196,162,100,.3)}
+.nav button{background:none;border:none;color:#C4A264;cursor:pointer;font-size:16px;padding:4px 10px}
+.nav button:hover{color:#fff}
+.nav .num{color:#F0EAE0;font-size:13px;letter-spacing:.1em}
+</style></head>
+<body><div class="deck">${slidesHtml}</div>
+<div class="nav"><button id="p">‹</button><span class="num"><span id="c">1</span> / ${slides.length}</span><button id="n">›</button></div>
+<script>
+const s=document.querySelectorAll('.slide');let i=0;const c=document.getElementById('c');
+function go(d){i=Math.max(0,Math.min(s.length-1,i+d));s.forEach((el,k)=>el.classList.toggle('active',k===i));c.textContent=i+1}
+go(0);document.getElementById('n').onclick=()=>go(1);document.getElementById('p').onclick=()=>go(-1);
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')go(1);if(e.key==='ArrowLeft')go(-1)});
+</script></body></html>`;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -81,7 +185,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Persist user message
     await supabase.from("messages").insert({
       conversation_id: conversationId,
       user_id: user.id,
@@ -89,7 +192,6 @@ Deno.serve(async (req) => {
       content: message,
     });
 
-    // Load history
     const { data: history } = await supabase
       .from("messages")
       .select("role, content, tool_calls, tool_call_id")
@@ -123,26 +225,22 @@ Deno.serve(async (req) => {
 
     if (!aiResp.ok) {
       if (aiResp.status === 429) {
-        return new Response(JSON.stringify({ error: "Trop de requêtes, réessayez dans un instant." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        return new Response(JSON.stringify({ error: "Trop de requêtes." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (aiResp.status === 402) {
-        return new Response(JSON.stringify({ error: "Crédits AI épuisés. Ajoutez du crédit dans votre workspace Lovable." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        return new Response(JSON.stringify({ error: "Crédits AI épuisés." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const t = await aiResp.text();
       console.error("AI error", aiResp.status, t);
       return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Stream + collect content + detect tool calls
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
@@ -194,7 +292,6 @@ Deno.serve(async (req) => {
 
         const toolCalls = Object.values(toolCallsMap);
 
-        // Persist assistant message
         await supabase.from("messages").insert({
           conversation_id: conversationId,
           user_id: user.id,
@@ -203,56 +300,71 @@ Deno.serve(async (req) => {
           tool_calls: toolCalls.length ? toolCalls : null,
         });
 
-        // Execute tools (create_render)
-        for (const tc of toolCalls) {
-          if (tc.function.name === "create_render") {
-            try {
-              const args = JSON.parse(tc.function.arguments || "{}");
-              // Get workspace
-              const { data: ws } = await supabase
-                .from("workspaces")
-                .select("id")
-                .limit(1)
-                .maybeSingle();
+        const { data: ws } = await supabase
+          .from("workspaces").select("id").limit(1).maybeSingle();
 
-              const { data: render, error: rErr } = await supabase
+        for (const tc of toolCalls) {
+          const name = tc.function.name;
+          let result: any = { ok: false };
+          try {
+            const args = JSON.parse(tc.function.arguments || "{}");
+
+            if (name === "create_render") {
+              const { data: render, error } = await supabase
                 .from("renders")
                 .insert({
-                  user_id: user.id,
-                  workspace_id: ws?.id ?? null,
-                  status: "pending",
-                  prompt: args.prompt,
-                  style: args.style,
+                  user_id: user.id, workspace_id: ws?.id ?? null,
+                  status: "pending", prompt: args.prompt, style: args.style,
                   input_path: "agent://text-only",
                 })
-                .select()
-                .single();
-
-              if (rErr) throw rErr;
-
-              // Trigger forma-render in background
+                .select().single();
+              if (error) throw error;
               fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/forma-render`, {
                 method: "POST",
-                headers: {
-                  Authorization: authHeader,
-                  "Content-Type": "application/json",
-                },
+                headers: { Authorization: authHeader, "Content-Type": "application/json" },
                 body: JSON.stringify({ renderId: render.id }),
               }).catch((e) => console.error("forma-render trigger", e));
-
-              const result = { renderId: render.id, status: "pending" };
-              await supabase.from("messages").insert({
-                conversation_id: conversationId,
-                user_id: user.id,
-                role: "tool",
-                content: JSON.stringify(result),
-                tool_call_id: tc.id,
-              });
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_result", name: "create_render", result })}\n\n`));
-            } catch (e) {
-              console.error("tool error", e);
+              result = { ok: true, kind: "render", renderId: render.id };
+            } else if (name === "create_slideshow") {
+              const html = wrapSlideshow(args.title || "Diaporama", args.slides || []);
+              const { data: a, error } = await supabase.from("artifacts").insert({
+                user_id: user.id, workspace_id: ws?.id ?? null,
+                type: "slideshow", title: args.title || "Diaporama",
+                content: html, mime_type: "text/html",
+              }).select().single();
+              if (error) throw error;
+              result = { ok: true, kind: "slideshow", artifactId: a.id, title: a.title };
+            } else if (name === "create_spreadsheet") {
+              const { data: a, error } = await supabase.from("artifacts").insert({
+                user_id: user.id, workspace_id: ws?.id ?? null,
+                type: "spreadsheet", title: args.title || "Tableur",
+                content: args.csv || "", mime_type: "text/csv",
+              }).select().single();
+              if (error) throw error;
+              result = { ok: true, kind: "spreadsheet", artifactId: a.id, title: a.title };
+            } else if (name === "create_dataviz" || name === "create_website") {
+              const { data: a, error } = await supabase.from("artifacts").insert({
+                user_id: user.id, workspace_id: ws?.id ?? null,
+                type: name === "create_dataviz" ? "dataviz" : "website",
+                title: args.title || (name === "create_dataviz" ? "Visualisation" : "Site"),
+                content: args.html || "", mime_type: "text/html",
+              }).select().single();
+              if (error) throw error;
+              result = { ok: true, kind: name === "create_dataviz" ? "dataviz" : "website", artifactId: a.id, title: a.title };
             }
+          } catch (e) {
+            console.error("tool error", name, e);
+            result = { ok: false, error: e instanceof Error ? e.message : "Unknown" };
           }
+
+          await supabase.from("messages").insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            role: "tool",
+            content: JSON.stringify(result),
+            tool_call_id: tc.id,
+          });
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_result", name, result })}\n\n`));
         }
 
         controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
@@ -266,8 +378,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error("forma-agent error", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
