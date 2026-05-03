@@ -36,15 +36,7 @@ const App = () => (
             >
               <Route index element={<Overview />} />
               <Route path="render" element={<Render />} />
-              <Route
-                path="agent"
-                element={
-                  <Placeholder
-                    title="FORMA Agent"
-                    description="Votre assistant IA pour l'architecture."
-                  />
-                }
-              />
+              <Route path="agent" element={<Agent />} />
               <Route
                 path="settings"
                 element={
