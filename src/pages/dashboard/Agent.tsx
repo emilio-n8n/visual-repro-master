@@ -206,6 +206,8 @@ export default function Agent() {
                 );
                 toast({ title: "Livrable prêt", description: parsed.result.title });
               }
+            } else if (parsed.type === "error") {
+              toast({ title: "Erreur agent", description: parsed.error, variant: "destructive" });
             }
           } catch {
             buffer = line + "\n" + buffer;
