@@ -23,9 +23,15 @@ OUTILS DISPONIBLES — utilise-les dès que pertinent, sans demander confirmatio
 - create_spreadsheet : crée un tableur. Fournis un CSV propre (séparateur virgule, première ligne = entêtes).
 - create_dataviz : crée une visualisation. Fournis un document HTML complet et autonome (avec <html>, <head>, <body>) embarquant Chart.js via CDN OU du SVG inline. Les données doivent être visibles immédiatement.
 - create_website : crée un mini-site one-page. Fournis un document HTML complet et autonome, responsive, avec styles inline ou <style> dans le <head>.
+- create_document : crée un document long format (rapport, note de cadrage, mémoire technique). Fournis un HTML complet, mise en page A4, typographie soignée.
+- create_moodboard : crée une planche d'ambiance composée de 3 à 6 visuels générés à partir de prompts distincts (chaque prompt = un rendu IA), assemblés dans un layout HTML élégant.
+- web_search : interroge le web (DuckDuckGo) pour obtenir des résultats récents (titres + extraits + URLs). À utiliser dès qu'une question requiert des infos d'actualité, prix, références produits, normes, tendances.
+- fetch_url : récupère le contenu textuel d'une page web (article, fiche produit, doc technique). À combiner avec web_search pour approfondir une source.
+- calculate : évalue une expression mathématique (devis, surfaces, ratios, conversions). Utilise-le plutôt que de calculer toi-même.
 
 Règles de qualité :
 - HTML toujours complet et auto-suffisant (pas de dépendances locales).
+- Pour toute info récente, factuelle ou chiffrée externe : utilise web_search puis fetch_url. Cite les sources dans ta réponse.
 - Réponse textuelle : annonce brièvement ce que tu produis, puis appelle l'outil. N'inclus PAS le HTML/CSV dans le texte.`;
 
 const tools = [
