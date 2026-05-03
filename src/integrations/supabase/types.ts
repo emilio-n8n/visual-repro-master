@@ -48,6 +48,7 @@ export type Database = {
           id: string
           input_path: string
           output_path: string | null
+          parent_id: string | null
           prompt: string | null
           status: string
           style: string | null
@@ -61,6 +62,7 @@ export type Database = {
           id?: string
           input_path: string
           output_path?: string | null
+          parent_id?: string | null
           prompt?: string | null
           status?: string
           style?: string | null
@@ -74,6 +76,7 @@ export type Database = {
           id?: string
           input_path?: string
           output_path?: string | null
+          parent_id?: string | null
           prompt?: string | null
           status?: string
           style?: string | null
@@ -82,6 +85,13 @@ export type Database = {
           workspace_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "renders_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "renders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "renders_workspace_id_fkey"
             columns: ["workspace_id"]

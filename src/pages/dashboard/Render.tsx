@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Upload, Loader2, Image as ImageIcon, Sparkles, AlertCircle } from "lucide-react";
+import { Upload, Loader2, Image as ImageIcon, Sparkles, AlertCircle, Wand2, X } from "lucide-react";
 
 type Render = {
   id: string;
@@ -15,6 +15,7 @@ type Render = {
   output_path: string | null;
   error: string | null;
   created_at: string;
+  parent_id: string | null;
 };
 
 const STYLES = [
@@ -33,9 +34,11 @@ export default function RenderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [renders, setRenders] = useState<Render[]>([]);
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [modifyTarget, setModifyTarget] = useState<Render | null>(null);
+  const [modifyPrompt, setModifyPrompt] = useState("");
+  const [modifying, setModifying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initial load + realtime
   useEffect(() => {
     if (!user) return;
     supabase
@@ -72,7 +75,6 @@ export default function RenderPage() {
     };
   }, [user]);
 
-  // Sign output URLs
   useEffect(() => {
     const need = renders.filter((r) => r.output_path && !signedUrls[r.id]);
     if (!need.length) return;
@@ -98,7 +100,6 @@ export default function RenderPage() {
     if (!file || !user) return;
     setSubmitting(true);
     try {
-      // 1. Upload to render-inputs/<userId>/<uuid>.<ext>
       const ext = file.name.split(".").pop() || "png";
       const id = crypto.randomUUID();
       const inputPath = `${user.id}/${id}.${ext}`;
@@ -107,7 +108,6 @@ export default function RenderPage() {
         .upload(inputPath, file, { contentType: file.type });
       if (upErr) throw upErr;
 
-      // 2. Insert render row
       const { data: inserted, error: insErr } = await supabase
         .from("renders")
         .insert({
@@ -121,7 +121,6 @@ export default function RenderPage() {
         .single();
       if (insErr) throw insErr;
 
-      // 3. Trigger edge function
       const { error: fnErr } = await supabase.functions.invoke("forma-render", {
         body: { renderId: inserted.id },
       });
@@ -138,6 +137,39 @@ export default function RenderPage() {
     }
   };
 
+  const handleModify = async () => {
+    if (!modifyTarget || !user || !modifyPrompt.trim()) return;
+    setModifying(true);
+    try {
+      const { data: inserted, error: insErr } = await supabase
+        .from("renders")
+        .insert({
+          user_id: user.id,
+          status: "pending",
+          input_path: modifyTarget.output_path!, // reused from parent, satisfies NOT NULL
+          style: modifyTarget.style,
+          prompt: modifyPrompt.trim(),
+          parent_id: modifyTarget.id,
+        })
+        .select()
+        .single();
+      if (insErr) throw insErr;
+
+      const { error: fnErr } = await supabase.functions.invoke("forma-render", {
+        body: { renderId: inserted.id },
+      });
+      if (fnErr) throw fnErr;
+
+      toast.success("Modification lancée…");
+      setModifyTarget(null);
+      setModifyPrompt("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setModifying(false);
+    }
+  };
+
   return (
     <div className="p-10 max-w-6xl">
       <h1
@@ -151,7 +183,6 @@ export default function RenderPage() {
       </p>
 
       <div className="grid lg:grid-cols-[1fr_1.2fr] gap-8 mb-12">
-        {/* Upload form */}
         <div className="border border-[#C4A264]/20 p-6 space-y-5 bg-black/20">
           <label
             htmlFor="file"
@@ -223,10 +254,14 @@ export default function RenderPage() {
           </Button>
         </div>
 
-        {/* Latest result */}
         <div className="border border-[#C4A264]/20 bg-black/20 min-h-[400px] flex items-center justify-center p-4">
           {renders[0] ? (
-            <RenderCard r={renders[0]} url={signedUrls[renders[0].id]} large />
+            <RenderCard
+              r={renders[0]}
+              url={signedUrls[renders[0].id]}
+              large
+              onModify={() => setModifyTarget(renders[0])}
+            />
           ) : (
             <div className="text-center text-[#F0EAE0]/40">
               <ImageIcon className="w-10 h-10 mx-auto mb-3" />
@@ -241,19 +276,90 @@ export default function RenderPage() {
           <div className="text-xs tracking-[0.3em] text-[#F0EAE0]/50 mb-4">HISTORIQUE</div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {renders.slice(1).map((r) => (
-              <RenderCard key={r.id} r={r} url={signedUrls[r.id]} />
+              <RenderCard
+                key={r.id}
+                r={r}
+                url={signedUrls[r.id]}
+                onModify={() => setModifyTarget(r)}
+              />
             ))}
           </div>
         </>
+      )}
+
+      {modifyTarget && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6"
+          onClick={() => !modifying && setModifyTarget(null)}
+        >
+          <div
+            className="bg-[#0b0b0b] border border-[#C4A264]/30 max-w-lg w-full p-8 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-4 right-4 text-[#F0EAE0]/50 hover:text-[#F0EAE0]"
+              onClick={() => setModifyTarget(null)}
+              disabled={modifying}
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <h2
+              className="text-2xl text-[#F0EAE0] mb-2"
+              style={{ fontFamily: "'Cormorant Garamond', serif" }}
+            >
+              Demander des modifications
+            </h2>
+            <p className="text-sm text-[#F0EAE0]/60 mb-5">
+              Décrivez les ajustements à appliquer à cette image.
+            </p>
+            {signedUrls[modifyTarget.id] && (
+              <img
+                src={signedUrls[modifyTarget.id]}
+                alt=""
+                className="w-full max-h-48 object-cover mb-4 border border-[#C4A264]/20"
+              />
+            )}
+            <Textarea
+              value={modifyPrompt}
+              onChange={(e) => setModifyPrompt(e.target.value)}
+              placeholder="Ex. ajouter un canapé en lin, plus de lumière naturelle, retirer le tapis…"
+              rows={4}
+              className="bg-transparent border-[#C4A264]/30 text-[#F0EAE0] resize-none mb-4"
+              autoFocus
+            />
+            <Button
+              onClick={handleModify}
+              disabled={!modifyPrompt.trim() || modifying}
+              className="w-full bg-[#C4A264] text-black hover:bg-[#C4A264]/90"
+            >
+              {modifying ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Wand2 className="w-4 h-4 mr-2" />
+              )}
+              Appliquer les modifications
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
-function RenderCard({ r, url, large }: { r: Render; url?: string; large?: boolean }) {
+function RenderCard({
+  r,
+  url,
+  large,
+  onModify,
+}: {
+  r: Render;
+  url?: string;
+  large?: boolean;
+  onModify?: () => void;
+}) {
   const aspect = large ? "aspect-[4/3]" : "aspect-square";
   return (
-    <div className={`relative ${aspect} bg-black/40 border border-[#C4A264]/15 overflow-hidden`}>
+    <div className={`relative ${aspect} bg-black/40 border border-[#C4A264]/15 overflow-hidden group`}>
       {r.status === "completed" && url ? (
         <img src={url} alt="rendu" className="w-full h-full object-cover" />
       ) : r.status === "failed" ? (
@@ -270,9 +376,21 @@ function RenderCard({ r, url, large }: { r: Render; url?: string; large?: boolea
         </div>
       )}
       {r.status === "completed" && (
-        <div className="absolute bottom-0 inset-x-0 px-3 py-2 bg-gradient-to-t from-black/70 to-transparent text-[10px] tracking-[0.2em] text-[#C4A264] uppercase">
-          {r.style}
-        </div>
+        <>
+          <div className="absolute bottom-0 inset-x-0 px-3 py-2 bg-gradient-to-t from-black/70 to-transparent text-[10px] tracking-[0.2em] text-[#C4A264] uppercase pointer-events-none">
+            {r.style}
+            {r.parent_id && " · modif."}
+          </div>
+          {onModify && (
+            <button
+              onClick={onModify}
+              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 border border-[#C4A264]/40 text-[#C4A264] hover:bg-[#C4A264] hover:text-black px-3 py-1.5 text-[10px] tracking-[0.2em] flex items-center gap-1.5"
+            >
+              <Wand2 className="w-3 h-3" />
+              MODIFIER
+            </button>
+          )}
+        </>
       )}
     </div>
   );
