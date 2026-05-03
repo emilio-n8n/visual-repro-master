@@ -516,11 +516,26 @@ Deno.serve(async (req) => {
             content: JSON.stringify(result),
             tool_call_id: tc.id,
           });
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_result", name, result })}\n\n`));
+          safeEnqueue(`data: ${JSON.stringify({ type: "tool_result", name, result })}\n\n`);
+
+          const compact: any = { ...result };
+          if (typeof compact.text === "string" && compact.text.length > 2000) {
+            compact.text = compact.text.slice(0, 2000) + "…";
+          }
+          apiMessages.push({
+            role: "tool",
+            tool_call_id: tc.id,
+            content: JSON.stringify(compact),
+          });
+            }
+          }
+        } catch (e) {
+          console.error("agent loop error", e);
+          safeEnqueue(`data: ${JSON.stringify({ type: "error", error: e instanceof Error ? e.message : "Unknown" })}\n\n`);
         }
 
-        controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
-        controller.close();
+        safeEnqueue(`data: [DONE]\n\n`);
+        try { controller.close(); } catch {}
       },
     });
 
