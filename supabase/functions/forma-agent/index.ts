@@ -118,6 +118,81 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "create_document",
+      description: "Crée un document long format (HTML mise en page A4).",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          html: { type: "string", description: "Document HTML complet, mise en page A4." },
+        },
+        required: ["title", "html"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_moodboard",
+      description: "Crée une planche d'ambiance avec 3 à 6 visuels IA.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          style: { type: "string", enum: ["photoreal", "twilight", "scandi", "editorial"] },
+          prompts: { type: "array", items: { type: "string" } },
+        },
+        required: ["title", "style", "prompts"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "web_search",
+      description: "Recherche web (DuckDuckGo). Renvoie titres, extraits, URLs.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string" },
+          max_results: { type: "number" },
+        },
+        required: ["query"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "fetch_url",
+      description: "Récupère le contenu textuel d'une page web.",
+      parameters: {
+        type: "object",
+        properties: { url: { type: "string" } },
+        required: ["url"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "calculate",
+      description: "Évalue une expression mathématique.",
+      parameters: {
+        type: "object",
+        properties: { expression: { type: "string" } },
+        required: ["expression"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 function wrapSlideshow(title: string, slides: string[]): string {
