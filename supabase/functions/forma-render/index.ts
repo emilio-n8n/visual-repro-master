@@ -92,24 +92,29 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Download input image (chunked base64 to avoid stack overflow on large files)
-    const { data: inputBlob, error: dlErr } = await admin.storage.from(bucket).download(path);
-    if (dlErr || !inputBlob) throw new Error(`Could not download input: ${dlErr?.message}`);
-
-    const inputBuf = await inputBlob.arrayBuffer();
-    const bytes = new Uint8Array(inputBuf);
-    let binary = "";
-    const CHUNK = 0x8000;
-    for (let i = 0; i < bytes.length; i += CHUNK) {
-      binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-    }
-    const base64 = btoa(binary);
-    const mime = inputBlob.type || "image/png";
-
     const stylePrompt = STYLE_PROMPTS[render.style ?? "photoreal"] ?? STYLE_PROMPTS.photoreal;
     const userPrompt = render.prompt
       ? `${stylePrompt}\n\nAdditional direction: ${render.prompt}`
       : stylePrompt;
+
+    const userContent: any[] = [{ type: "text", text: userPrompt }];
+
+    if (!isTextOnly) {
+      // Download input image (chunked base64 to avoid stack overflow on large files)
+      const { data: inputBlob, error: dlErr } = await admin.storage.from(bucket).download(path);
+      if (dlErr || !inputBlob) throw new Error(`Could not download input: ${dlErr?.message}`);
+
+      const inputBuf = await inputBlob.arrayBuffer();
+      const bytes = new Uint8Array(inputBuf);
+      let binary = "";
+      const CHUNK = 0x8000;
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+      }
+      const base64 = btoa(binary);
+      const mime = inputBlob.type || "image/png";
+      userContent.push({ type: "image_url", image_url: { url: `data:${mime};base64,${base64}` } });
+    }
 
     // Call Lovable AI Gateway with image input
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -120,15 +125,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-3.1-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: userPrompt },
-              { type: "image_url", image_url: { url: `data:${mime};base64,${base64}` } },
-            ],
-          },
-        ],
+        messages: [{ role: "user", content: userContent }],
         modalities: ["image", "text"],
       }),
     });
