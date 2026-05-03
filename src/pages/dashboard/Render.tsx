@@ -54,12 +54,14 @@ export default function RenderPage() {
         { event: "*", schema: "public", table: "renders", filter: `user_id=eq.${user.id}` },
         (payload) => {
           setRenders((curr) => {
-            if (payload.eventType === "INSERT") return [payload.new as Render, ...curr];
-            if (payload.eventType === "UPDATE")
-              return curr.map((r) => (r.id === (payload.new as Render).id ? (payload.new as Render) : r));
             if (payload.eventType === "DELETE")
               return curr.filter((r) => r.id !== (payload.old as Render).id);
-            return curr;
+            const row = payload.new as Render;
+            const idx = curr.findIndex((r) => r.id === row.id);
+            if (idx === -1) return [row, ...curr];
+            const next = curr.slice();
+            next[idx] = row;
+            return next;
           });
         },
       )
