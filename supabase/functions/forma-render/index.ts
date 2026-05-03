@@ -75,14 +75,33 @@ Deno.serve(async (req) => {
 
     await admin.from("renders").update({ status: "processing", error: null }).eq("id", renderId);
 
-    // Download input image
-    const { data: inputBlob, error: dlErr } = await admin.storage
-      .from("render-inputs")
-      .download(render.input_path);
+    // If this render has a parent (modification request), use parent's output as input
+    let bucket = "render-inputs";
+    let path = render.input_path;
+    if (render.parent_id) {
+      const { data: parent } = await admin
+        .from("renders")
+        .select("output_path")
+        .eq("id", render.parent_id)
+        .maybeSingle();
+      if (parent?.output_path) {
+        bucket = "render-outputs";
+        path = parent.output_path;
+      }
+    }
+
+    // Download input image (chunked base64 to avoid stack overflow on large files)
+    const { data: inputBlob, error: dlErr } = await admin.storage.from(bucket).download(path);
     if (dlErr || !inputBlob) throw new Error(`Could not download input: ${dlErr?.message}`);
 
     const inputBuf = await inputBlob.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(inputBuf)));
+    const bytes = new Uint8Array(inputBuf);
+    let binary = "";
+    const CHUNK = 0x8000;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+    }
+    const base64 = btoa(binary);
     const mime = inputBlob.type || "image/png";
 
     const stylePrompt = STYLE_PROMPTS[render.style ?? "photoreal"] ?? STYLE_PROMPTS.photoreal;
