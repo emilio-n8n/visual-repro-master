@@ -423,16 +423,78 @@ Deno.serve(async (req) => {
               }).select().single();
               if (error) throw error;
               result = { ok: true, kind: "spreadsheet", artifactId: a.id, title: a.title };
-            } else if (name === "create_dataviz" || name === "create_website") {
+            } else if (name === "create_dataviz" || name === "create_website" || name === "create_document") {
+              const t = name === "create_dataviz" ? "dataviz" : name === "create_website" ? "website" : "document";
               const { data: a, error } = await supabase.from("artifacts").insert({
                 user_id: user.id, workspace_id: ws?.id ?? null,
-                type: name === "create_dataviz" ? "dataviz" : "website",
-                title: args.title || (name === "create_dataviz" ? "Visualisation" : "Site"),
+                type: t,
+                title: args.title || (t === "dataviz" ? "Visualisation" : t === "website" ? "Site" : "Document"),
                 content: args.html || "", mime_type: "text/html",
               }).select().single();
               if (error) throw error;
-              result = { ok: true, kind: name === "create_dataviz" ? "dataviz" : "website", artifactId: a.id, title: a.title };
+              result = { ok: true, kind: t, artifactId: a.id, title: a.title };
+            } else if (name === "create_moodboard") {
+              const prompts: string[] = (args.prompts || []).slice(0, 6);
+              const renderIds: string[] = [];
+              for (const p of prompts) {
+                const { data: r, error } = await supabase.from("renders").insert({
+                  user_id: user.id, workspace_id: ws?.id ?? null,
+                  status: "pending", prompt: p, style: args.style || "photoreal",
+                  input_path: "agent://text-only",
+                }).select().single();
+                if (error) throw error;
+                renderIds.push(r.id);
+                fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/forma-render`, {
+                  method: "POST",
+                  headers: { Authorization: authHeader, "Content-Type": "application/json" },
+                  body: JSON.stringify({ renderId: r.id }),
+                }).catch((e) => console.error("forma-render trigger", e));
+              }
+              const { data: a, error: aerr } = await supabase.from("artifacts").insert({
+                user_id: user.id, workspace_id: ws?.id ?? null,
+                type: "moodboard", title: args.title || "Moodboard",
+                content: JSON.stringify({ renderIds, prompts, style: args.style }),
+                mime_type: "application/json",
+              }).select().single();
+              if (aerr) throw aerr;
+              result = { ok: true, kind: "moodboard", artifactId: a.id, title: a.title, renderIds };
+            } else if (name === "web_search") {
+              const q = encodeURIComponent(args.query || "");
+              const max = Math.min(10, args.max_results || 5);
+              const r = await fetch(`https://duckduckgo.com/html/?q=${q}`, {
+                headers: { "User-Agent": "Mozilla/5.0 FORMA Agent" },
+              });
+              const html = await r.text();
+              const items: any[] = [];
+              const re = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
+              let m: RegExpExecArray | null;
+              while ((m = re.exec(html)) && items.length < max) {
+                const url = decodeURIComponent(m[1].replace(/^.*uddg=/, "").split("&")[0]);
+                const title = m[2].replace(/<[^>]+>/g, "").trim();
+                const snippet = m[3].replace(/<[^>]+>/g, "").trim();
+                items.push({ title, url, snippet });
+              }
+              result = { ok: true, kind: "web_search", query: args.query, results: items };
+            } else if (name === "fetch_url") {
+              const r = await fetch(args.url, {
+                headers: { "User-Agent": "Mozilla/5.0 FORMA Agent" },
+              });
+              const html = await r.text();
+              const text = html
+                .replace(/<script[\s\S]*?<\/script>/gi, "")
+                .replace(/<style[\s\S]*?<\/style>/gi, "")
+                .replace(/<[^>]+>/g, " ")
+                .replace(/\s+/g, " ")
+                .trim()
+                .slice(0, 8000);
+              result = { ok: true, kind: "fetch_url", url: args.url, text };
+            } else if (name === "calculate") {
+              const expr = String(args.expression || "");
+              if (!/^[\d\s+\-*/().,%^]+$/.test(expr)) throw new Error("Expression invalide");
+              const val = Function(`"use strict";return (${expr.replace(/\^/g, "**").replace(/,/g, ".")})`)();
+              result = { ok: true, kind: "calculate", expression: expr, value: val };
             }
+
           } catch (e) {
             console.error("tool error", name, e);
             result = { ok: false, error: e instanceof Error ? e.message : "Unknown" };
