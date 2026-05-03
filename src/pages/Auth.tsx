@@ -66,8 +66,10 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="forma-landing min-h-screen flex items-center justify-center px-6 py-16">
-      <div className="forma-noise" />
+    <div
+      className="min-h-screen flex items-center justify-center px-6 py-16 relative"
+      style={{ background: "var(--black, #0a0a0a)", color: "var(--ivory, #F0EAE0)" }}
+    >
       <div className="w-full max-w-md relative z-10">
         <Link
           to="/"

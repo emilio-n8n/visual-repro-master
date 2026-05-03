@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import "@/styles/forma-landing.css";
 
 const Index = () => {
@@ -198,7 +199,7 @@ const Index = () => {
           <a href="#agent">Agent</a>
           <a href="#pricing">Tarifs</a>
           <a href="#about">À propos</a>
-          <a href="#" className="nav-cta">Accès early</a>
+          <Link to="/auth" className="nav-cta">Connexion</Link>
         </div>
       </nav>
 
@@ -228,7 +229,7 @@ const Index = () => {
           Un seul outil conçu pour les architectes qui refusent le compromis.
         </p>
         <div className="hero-actions">
-          <a href="#" className="btn-primary">Demander l'accès</a>
+          <Link to="/auth" className="btn-primary">Se connecter</Link>
           <a href="#render" className="btn-ghost">Découvrir les outils</a>
         </div>
 
