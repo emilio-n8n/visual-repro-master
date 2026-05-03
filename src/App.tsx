@@ -11,7 +11,7 @@ import DashboardLayout from "./pages/dashboard/DashboardLayout.tsx";
 import Overview from "./pages/dashboard/Overview.tsx";
 import Render from "./pages/dashboard/Render.tsx";
 import Agent from "./pages/dashboard/Agent.tsx";
-import Placeholder from "./pages/dashboard/Placeholder.tsx";
+import Settings from "./pages/dashboard/Settings.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -37,12 +37,7 @@ const App = () => (
               <Route index element={<Overview />} />
               <Route path="render" element={<Render />} />
               <Route path="agent" element={<Agent />} />
-              <Route
-                path="settings"
-                element={
-                  <Placeholder title="Paramètres" description="Gérez votre studio et votre équipe." />
-                }
-              />
+              <Route path="settings" element={<Settings />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
