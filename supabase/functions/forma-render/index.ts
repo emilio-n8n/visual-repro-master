@@ -75,6 +75,8 @@ Deno.serve(async (req) => {
 
     await admin.from("renders").update({ status: "processing", error: null }).eq("id", renderId);
 
+    const isTextOnly = render.input_path === "agent://text-only" && !render.parent_id;
+
     // If this render has a parent (modification request), use parent's output as input
     let bucket = "render-inputs";
     let path = render.input_path;
