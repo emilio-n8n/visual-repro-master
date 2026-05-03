@@ -267,18 +267,23 @@ export default function Agent() {
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[75%] px-4 py-3 rounded-sm text-sm ${
+                  className={`px-4 py-3 rounded-sm text-sm ${
                     m.role === "user"
-                      ? "bg-[#C4A264]/15 text-[#F0EAE0] border border-[#C4A264]/20"
-                      : "bg-white/[0.03] text-[#F0EAE0]/90 border border-white/5"
+                      ? "max-w-[75%] bg-[#C4A264]/15 text-[#F0EAE0] border border-[#C4A264]/20"
+                      : "max-w-[85%] w-full bg-white/[0.03] text-[#F0EAE0]/90 border border-white/5"
                   }`}
                 >
-                  <div className="prose prose-sm prose-invert max-w-none prose-p:my-2 prose-headings:text-[#C4A264]">
-                    <ReactMarkdown>{m.content || (loading ? "…" : "")}</ReactMarkdown>
-                  </div>
-                  {m.tool_calls && (
+                  {m.content && (
+                    <div className="prose prose-sm prose-invert max-w-none prose-p:my-2 prose-headings:text-[#C4A264]">
+                      <ReactMarkdown>{m.content}</ReactMarkdown>
+                    </div>
+                  )}
+                  {m.artifactIds?.map((id) => (
+                    <ArtifactPreview key={id} artifactId={id} />
+                  ))}
+                  {m.tool_calls && !m.artifactIds?.length && m.role === "assistant" && (
                     <div className="mt-2 text-xs text-[#C4A264]/70 italic">
-                      ⚡ Outil utilisé : {m.tool_calls[0]?.function?.name}
+                      ⚡ Outil : {m.tool_calls[0]?.function?.name}…
                     </div>
                   )}
                 </div>
