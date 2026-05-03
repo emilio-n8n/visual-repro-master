@@ -1,28 +1,34 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Download, ExternalLink, FileSpreadsheet, LayoutGrid, BarChart3, Globe, Loader2 } from "lucide-react";
+import { Download, ExternalLink, FileSpreadsheet, LayoutGrid, BarChart3, Globe, Loader2, FileText, Images } from "lucide-react";
+
+type ArtifactType = "slideshow" | "spreadsheet" | "dataviz" | "website" | "document" | "moodboard";
 
 type Artifact = {
   id: string;
-  type: "slideshow" | "spreadsheet" | "dataviz" | "website";
+  type: ArtifactType;
   title: string;
   content: string;
   mime_type: string;
 };
 
-const ICONS = {
+const ICONS: Record<ArtifactType, any> = {
   slideshow: LayoutGrid,
   spreadsheet: FileSpreadsheet,
   dataviz: BarChart3,
   website: Globe,
+  document: FileText,
+  moodboard: Images,
 };
 
-const LABELS = {
+const LABELS: Record<ArtifactType, string> = {
   slideshow: "Diaporama",
   spreadsheet: "Tableur",
   dataviz: "Visualisation",
   website: "Site web",
+  document: "Document",
+  moodboard: "Moodboard",
 };
 
 export function ArtifactPreview({ artifactId }: { artifactId: string }) {
