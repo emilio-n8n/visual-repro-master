@@ -430,8 +430,6 @@ Deno.serve(async (req) => {
           try { controller.enqueue(encoder.encode(s)); } catch {}
         };
 
-        const { data: ws } = await supabase
-          .from("workspaces").select("id").limit(1).maybeSingle();
 
         try {
           const MAX_TURNS = 5;
