@@ -59,23 +59,15 @@ export default function Join() {
   }
 
   async function accept() {
-    if (!user || !member) return;
+    if (!user || !token) return;
     setBusy(true);
     try {
-      // First: bind self to team_members row (RLS update only allowed by owner; use RPC-less workaround: invited person becomes member via workspace_members insert by owner; here we mark via update on team_members token which is only allowed by owner. Workaround: insert into workspace_members directly using a security definer function would be needed. Simpler approach: only the owner can finalize, but we can have the new user insert into workspace_members and update team_members through an edge call.)
-      // Simpler safe path: insert workspace_members and let owner accept later.
-      const { error: e1 } = await supabase
-        .from("workspace_members")
-        .insert({ workspace_id: member.workspace_id, user_id: user.id, role: "member" });
-      if (e1 && !String(e1.message).includes("duplicate")) throw e1;
-
-      // Now set joined_user_id (RLS allows self update where joined_user_id = auth.uid(); first set requires joined null -> not allowed by self policy. Use update by owner via a server function not available — fallback: skip update, owner will see who joined via workspace_members).
-      await supabase
-        .from("team_members")
-        .update({ joined_user_id: user.id, status: "active" })
-        .eq("id", member.id);
-
+      const { data, error } = await supabase.rpc("claim_team_invite", { _token: token });
+      if (error) throw error;
+      const res = data as any;
+      if (!res?.ok) throw new Error(res?.error ?? "invitation invalide");
       toast({ title: "Bienvenue dans l'équipe" });
+      localStorage.removeItem("forma.joinToken");
       navigate("/dashboard");
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
