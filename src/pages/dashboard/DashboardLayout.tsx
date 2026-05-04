@@ -1,11 +1,23 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Image as ImageIcon, Bot, Settings, LogOut } from "lucide-react";
-
-type Workspace = { id: string; name: string; slug: string; plan: string };
+import { ProjectSwitcher } from "@/components/ProjectSwitcher";
+import {
+  Sparkles,
+  Image as ImageIcon,
+  Bot,
+  Settings,
+  LogOut,
+  Bell,
+} from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const navItems = [
   { to: "/dashboard", icon: Sparkles, label: "Vue d'ensemble", end: true },
@@ -16,18 +28,33 @@ const navItems = [
 
 export default function DashboardLayout() {
   const { user, signOut } = useAuth();
+  const { workspace } = useWorkspace();
   const navigate = useNavigate();
-  const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [notifs, setNotifs] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user) return;
     supabase
-      .from("workspaces")
-      .select("id, name, slug, plan")
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => setWorkspace(data));
+      .from("notifications")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data }) => setNotifs(data ?? []));
   }, [user]);
+
+  const unread = notifs.filter((n) => !n.read_at).length;
+
+  async function markAllRead() {
+    if (!user || unread === 0) return;
+    await supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .is("read_at", null)
+      .eq("user_id", user.id);
+    setNotifs((prev) =>
+      prev.map((n) => (n.read_at ? n : { ...n, read_at: new Date().toISOString() }))
+    );
+  }
 
   return (
     <div className="min-h-screen flex bg-[#0b0b0b] text-[#F0EAE0]">
@@ -42,6 +69,10 @@ export default function DashboardLayout() {
           {workspace && (
             <div className="mt-2 text-xs text-[#F0EAE0]/50 truncate">{workspace.name}</div>
           )}
+        </div>
+
+        <div className="px-3 pt-3">
+          <ProjectSwitcher />
         </div>
 
         <nav className="flex-1 p-3 space-y-1">
@@ -64,8 +95,42 @@ export default function DashboardLayout() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-[#C4A264]/15">
-          <div className="text-xs text-[#F0EAE0]/50 mb-2 truncate">{user?.email}</div>
+        <div className="p-4 border-t border-[#C4A264]/15 space-y-2">
+          <Popover onOpenChange={(o) => o && markAllRead()}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-[#F0EAE0]/70 hover:text-[#F0EAE0] relative"
+              >
+                <Bell className="w-4 h-4 mr-2" />
+                Notifications
+                {unread > 0 && (
+                  <span className="ml-auto bg-[#C4A264] text-black text-[10px] rounded-full px-1.5 py-0.5">
+                    {unread}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 bg-[#0b0b0b] border-[#C4A264]/20 p-0 max-h-96 overflow-auto">
+              {notifs.length === 0 ? (
+                <div className="p-4 text-xs text-[#F0EAE0]/40 text-center">
+                  Aucune notification
+                </div>
+              ) : (
+                notifs.map((n) => (
+                  <div
+                    key={n.id}
+                    className="p-3 border-b border-white/5 text-xs hover:bg-white/5"
+                  >
+                    <div className="text-[#C4A264] mb-0.5">{n.title}</div>
+                    <div className="text-[#F0EAE0]/60">{n.body}</div>
+                  </div>
+                ))
+              )}
+            </PopoverContent>
+          </Popover>
+          <div className="text-xs text-[#F0EAE0]/50 truncate">{user?.email}</div>
           <Button
             variant="ghost"
             size="sm"
@@ -82,7 +147,7 @@ export default function DashboardLayout() {
       </aside>
 
       <main className="flex-1 overflow-auto">
-        <Outlet context={{ workspace }} />
+        <Outlet />
       </main>
     </div>
   );

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/hooks/useAuth";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { Send, Plus, MessageSquare, Loader2 } from "lucide-react";
+import { Send, Plus, MessageSquare, Loader2, FolderOpen } from "lucide-react";
 import { ArtifactPreview } from "@/components/ArtifactPreview";
 
 type Conversation = { id: string; title: string; created_at: string };
@@ -19,6 +20,7 @@ type Message = {
 
 export default function Agent() {
   const { user } = useAuth();
+  const { activeProjectId, projects } = useWorkspace();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,10 +28,14 @@ export default function Agent() {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const activeProject = projects.find((p) => p.id === activeProjectId);
+
   useEffect(() => {
     if (!user) return;
+    setActiveId(null);
     loadConversations();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, activeProjectId]);
 
   useEffect(() => {
     if (activeId) loadMessages(activeId);
@@ -41,12 +47,13 @@ export default function Agent() {
   }, [messages]);
 
   async function loadConversations() {
-    const { data } = await supabase
+    let q = supabase
       .from("conversations")
       .select("id, title, created_at")
       .order("created_at", { ascending: false });
+    q = activeProjectId ? q.eq("project_id", activeProjectId) : q.is("project_id", null);
+    const { data } = await q;
     setConversations(data ?? []);
-    if (data?.length && !activeId) setActiveId(data[0].id);
   }
 
   async function loadMessages(id: string) {
@@ -81,7 +88,11 @@ export default function Agent() {
     if (!user) return;
     const { data, error } = await supabase
       .from("conversations")
-      .insert({ user_id: user.id, title: "Nouvelle conversation" })
+      .insert({
+        user_id: user.id,
+        title: "Nouvelle conversation",
+        project_id: activeProjectId,
+      })
       .select()
       .single();
     if (error) {
@@ -102,6 +113,7 @@ export default function Agent() {
         .insert({
           user_id: user.id,
           title: input.slice(0, 60),
+          project_id: activeProjectId,
         })
         .select()
         .single();
@@ -135,7 +147,7 @@ export default function Agent() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ conversationId: convId, message: messageText }),
+        body: JSON.stringify({ conversationId: convId, message: messageText, projectId: activeProjectId }),
       });
 
       if (!resp.ok || !resp.body) {
@@ -256,16 +268,24 @@ export default function Agent() {
 
       {/* Chat area */}
       <div className="flex-1 flex flex-col">
-        <div className="px-8 py-5 border-b border-[#C4A264]/15">
-          <h1
-            className="text-2xl text-[#C4A264]"
-            style={{ fontFamily: "'Cormorant Garamond', serif" }}
-          >
-            FORMA Agent
-          </h1>
-          <p className="text-xs text-[#F0EAE0]/50 mt-1">
-            Votre assistant IA pour rendus, ambiances et matériaux.
-          </p>
+        <div className="px-8 py-5 border-b border-[#C4A264]/15 flex items-center justify-between gap-4">
+          <div>
+            <h1
+              className="text-2xl text-[#C4A264]"
+              style={{ fontFamily: "'Cormorant Garamond', serif" }}
+            >
+              FORMA Agent
+            </h1>
+            <p className="text-xs text-[#F0EAE0]/50 mt-1">
+              Votre assistant IA pour rendus, ambiances et matériaux.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 border border-[#C4A264]/20 rounded-sm text-xs">
+            <FolderOpen className="w-3 h-3 text-[#C4A264]" />
+            <span className="text-[#F0EAE0]/70">
+              {activeProject ? activeProject.name : "Hors projet"}
+            </span>
+          </div>
         </div>
 
         <div ref={scrollRef} className="flex-1 overflow-auto px-8 py-6 space-y-6">

@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `Tu es FORMA Agent, l'assistant IA dédié aux architectes et designers d'intérieur de la marque FORMA.
+const BASE_PROMPT = `Tu es FORMA Agent, l'assistant IA dédié aux architectes et designers d'intérieur de la marque FORMA.
 
 Ton rôle :
 - Aider à formuler des prompts pour la génération de rendus photoréalistes.
@@ -18,21 +18,18 @@ Ton rôle :
 Style : élégant, précis, concis. Vouvoiement. Français par défaut.
 
 OUTILS DISPONIBLES — utilise-les dès que pertinent, sans demander confirmation :
-- create_render : génère une image / rendu IA (style: photoreal, twilight, scandi, editorial).
-- create_slideshow : crée un diaporama. Tu fournis un tableau de slides, chacune codée en HTML complet (un <section> autonome avec styles inline, ratio 16:9). Soigne la typo (Cormorant Garamond pour les titres, Inter pour le texte), respecte une charte sobre et premium (or #C4A264, ivoire #F0EAE0, fond sombre #0b0b0b ou clair #faf7f2 selon le contexte).
-- create_spreadsheet : crée un tableur. Fournis un CSV propre (séparateur virgule, première ligne = entêtes).
-- create_dataviz : crée une visualisation. Fournis un document HTML complet et autonome (avec <html>, <head>, <body>) embarquant Chart.js via CDN OU du SVG inline. Les données doivent être visibles immédiatement.
-- create_website : crée un mini-site one-page. Fournis un document HTML complet et autonome, responsive, avec styles inline ou <style> dans le <head>.
-- create_document : crée un document long format (rapport, note de cadrage, mémoire technique). Fournis un HTML complet, mise en page A4, typographie soignée.
-- create_moodboard : crée une planche d'ambiance composée de 3 à 6 visuels générés à partir de prompts distincts (chaque prompt = un rendu IA), assemblés dans un layout HTML élégant.
-- web_search : interroge le web (DuckDuckGo) pour obtenir des résultats récents (titres + extraits + URLs). À utiliser dès qu'une question requiert des infos d'actualité, prix, références produits, normes, tendances.
-- fetch_url : récupère le contenu textuel d'une page web (article, fiche produit, doc technique). À combiner avec web_search pour approfondir une source.
-- calculate : évalue une expression mathématique (devis, surfaces, ratios, conversions). Utilise-le plutôt que de calculer toi-même.
+- create_render, create_slideshow, create_spreadsheet, create_dataviz, create_website, create_document, create_moodboard
+- web_search, fetch_url, calculate
+- remember : sauvegarde un fait important. Choisis le bon scope : 'project' (lié au projet courant), 'workspace' (lié au cabinet, partagé avec l'équipe), 'global' (préférences personnelles transverses).
+- recall_memories : recherche dans tes souvenirs (par scope/projet).
+- list_projects, list_team, list_team_work : explore le studio et le travail des membres.
+- mention_member : notifie un membre du studio (mention).
 
 Règles de qualité :
-- HTML toujours complet et auto-suffisant (pas de dépendances locales).
-- Pour toute info récente, factuelle ou chiffrée externe : utilise web_search puis fetch_url. Cite les sources dans ta réponse.
-- Réponse textuelle : annonce brièvement ce que tu produis, puis appelle l'outil. N'inclus PAS le HTML/CSV dans le texte.`;
+- HTML toujours complet et auto-suffisant.
+- Pour info récente / chiffrée : web_search puis fetch_url. Cite les sources.
+- Sauvegarde activement avec remember dès qu'un fait nouveau est appris (préférence du cabinet, contrainte projet, décision client). N'attends pas qu'on te le demande.
+- Réponse textuelle : annonce brièvement ce que tu produis, puis appelle l'outil.`;
 
 const tools = [
   {
@@ -193,6 +190,88 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "remember",
+      description: "Sauvegarde un fait/préférence en mémoire. Scopes: 'project' (projet courant), 'workspace' (cabinet, partagé équipe), 'global' (préférences perso transverses).",
+      parameters: {
+        type: "object",
+        properties: {
+          scope: { type: "string", enum: ["project", "workspace", "global"] },
+          key: { type: "string", description: "Étiquette courte (ex: 'preference_couleurs', 'contrainte_budget')" },
+          content: { type: "string", description: "Le souvenir, en une phrase claire." },
+        },
+        required: ["scope", "content"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "recall_memories",
+      description: "Recherche des souvenirs (par scope, ou tous).",
+      parameters: {
+        type: "object",
+        properties: {
+          scope: { type: "string", enum: ["project", "workspace", "global", "all"] },
+          query: { type: "string", description: "Mots-clés (optionnel)." },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_projects",
+      description: "Liste les projets du studio.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_team",
+      description: "Liste les membres de l'équipe et leur rôle.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_team_work",
+      description: "Liste les derniers livrables/conversations produits par l'équipe (filtrable par membre ou projet).",
+      parameters: {
+        type: "object",
+        properties: {
+          member_id: { type: "string", description: "user_id d'un membre (optionnel)" },
+          project_id: { type: "string", description: "id d'un projet (optionnel)" },
+          limit: { type: "number" },
+        },
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "mention_member",
+      description: "Notifie un membre de l'équipe (mention).",
+      parameters: {
+        type: "object",
+        properties: {
+          team_member_id: { type: "string" },
+          title: { type: "string" },
+          body: { type: "string" },
+        },
+        required: ["team_member_id", "title"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 function wrapSlideshow(title: string, slides: string[]): string {
@@ -258,12 +337,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { conversationId, message } = await req.json();
+    const { conversationId, message, projectId } = await req.json();
     if (!conversationId || !message) {
       return new Response(JSON.stringify({ error: "Missing fields" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Ensure conversation has correct project_id
+    if (projectId !== undefined) {
+      await supabase.from("conversations").update({ project_id: projectId }).eq("id", conversationId);
     }
 
     await supabase.from("messages").insert({
@@ -272,6 +356,53 @@ Deno.serve(async (req) => {
       role: "user",
       content: message,
     });
+
+    // Load workspace, cabinet profile, project, and memories context
+    const { data: ws } = await supabase
+      .from("workspaces").select("id, name").limit(1).maybeSingle();
+    const wsId = ws?.id ?? null;
+
+    const [{ data: cabinet }, { data: project }, { data: memList }] = await Promise.all([
+      wsId ? supabase.from("cabinet_profile").select("*").eq("workspace_id", wsId).maybeSingle() : Promise.resolve({ data: null }),
+      projectId ? supabase.from("projects").select("*").eq("id", projectId).maybeSingle() : Promise.resolve({ data: null }),
+      supabase.from("memories").select("scope, key, content, project_id").or(
+        `scope.eq.global,workspace_id.eq.${wsId ?? "00000000-0000-0000-0000-000000000000"}`
+      ).order("created_at", { ascending: false }).limit(60),
+    ]);
+
+    let contextBlock = "";
+    if (cabinet) {
+      contextBlock += `\n\n## Cabinet (${cabinet.name ?? ""})\n`;
+      const fields = ["style","project_types","tone","email_signature","tools","deliverables","clientele","brand_values","references_text","process","materials_pref","suppliers","typical_pricing"];
+      for (const f of fields) {
+        const v = (cabinet as any)[f];
+        if (v) contextBlock += `- ${f}: ${String(v).slice(0, 300)}\n`;
+      }
+      const tpl = (cabinet as any).email_templates;
+      if (tpl && Object.keys(tpl).length) {
+        contextBlock += `- email_templates: ${Object.keys(tpl).join(", ")}\n`;
+      }
+    }
+    if (project) {
+      contextBlock += `\n## Projet courant: ${project.name}\n`;
+      for (const f of ["client","location","type","surface","budget","deadline","brief"]) {
+        const v = (project as any)[f];
+        if (v) contextBlock += `- ${f}: ${v}\n`;
+      }
+    } else {
+      contextBlock += `\n## Projet courant: (hors projet)\n`;
+    }
+    const relevantMems = (memList ?? []).filter((m: any) =>
+      m.scope === "global" || m.scope === "workspace" || (m.scope === "project" && m.project_id === projectId)
+    );
+    if (relevantMems.length) {
+      contextBlock += `\n## Mémoires (${relevantMems.length})\n`;
+      for (const m of relevantMems.slice(0, 30)) {
+        contextBlock += `- [${m.scope}${m.key ? ":"+m.key : ""}] ${String(m.content).slice(0, 240)}\n`;
+      }
+    }
+
+    const SYSTEM_PROMPT = BASE_PROMPT + contextBlock;
 
     const { data: history } = await supabase
       .from("messages")
@@ -299,8 +430,6 @@ Deno.serve(async (req) => {
           try { controller.enqueue(encoder.encode(s)); } catch {}
         };
 
-        const { data: ws } = await supabase
-          .from("workspaces").select("id").limit(1).maybeSingle();
 
         try {
           const MAX_TURNS = 5;
@@ -502,6 +631,61 @@ Deno.serve(async (req) => {
               if (!/^[\d\s+\-*/().,%^]+$/.test(expr)) throw new Error("Expression invalide");
               const val = Function(`"use strict";return (${expr.replace(/\^/g, "**").replace(/,/g, ".")})`)();
               result = { ok: true, kind: "calculate", expression: expr, value: val };
+            } else if (name === "remember") {
+              const scope = args.scope as string;
+              const { data: mem, error } = await supabase.from("memories").insert({
+                user_id: user.id,
+                workspace_id: scope === "global" ? null : ws?.id ?? null,
+                project_id: scope === "project" ? projectId ?? null : null,
+                scope,
+                key: args.key ?? null,
+                content: String(args.content || ""),
+              }).select().single();
+              if (error) throw error;
+              result = { ok: true, kind: "remember", id: mem.id, scope };
+            } else if (name === "recall_memories") {
+              const scope = args.scope ?? "all";
+              let q = supabase.from("memories").select("scope, key, content, project_id, created_at").order("created_at", { ascending: false }).limit(40);
+              if (scope !== "all") q = q.eq("scope", scope);
+              const { data } = await q;
+              let mems = data ?? [];
+              if (args.query) {
+                const ql = String(args.query).toLowerCase();
+                mems = mems.filter((m: any) => (m.content || "").toLowerCase().includes(ql) || (m.key || "").toLowerCase().includes(ql));
+              }
+              result = { ok: true, kind: "recall_memories", count: mems.length, memories: mems.slice(0, 20) };
+            } else if (name === "list_projects") {
+              const { data } = await supabase.from("projects").select("id, name, client, location, type, deadline").order("updated_at", { ascending: false });
+              result = { ok: true, kind: "list_projects", projects: data ?? [] };
+            } else if (name === "list_team") {
+              const { data } = await supabase.from("team_members").select("id, display_name, email, role_label, status, joined_user_id");
+              result = { ok: true, kind: "list_team", members: data ?? [] };
+            } else if (name === "list_team_work") {
+              const limit = Math.min(30, args.limit || 10);
+              let aq = supabase.from("artifacts").select("id, type, title, project_id, user_id, created_at").order("created_at", { ascending: false }).limit(limit);
+              if (args.project_id) aq = aq.eq("project_id", args.project_id);
+              if (args.member_id) aq = aq.eq("user_id", args.member_id);
+              let cq = supabase.from("conversations").select("id, title, project_id, user_id, updated_at").order("updated_at", { ascending: false }).limit(limit);
+              if (args.project_id) cq = cq.eq("project_id", args.project_id);
+              if (args.member_id) cq = cq.eq("user_id", args.member_id);
+              const [{ data: arts }, { data: convs }] = await Promise.all([aq, cq]);
+              result = { ok: true, kind: "list_team_work", artifacts: arts ?? [], conversations: convs ?? [] };
+            } else if (name === "mention_member") {
+              const { data: tm } = await supabase.from("team_members").select("joined_user_id, display_name, workspace_id").eq("id", args.team_member_id).maybeSingle();
+              if (!tm?.joined_user_id) {
+                result = { ok: false, error: "Membre non encore inscrit" };
+              } else {
+                const { error } = await supabase.from("notifications").insert({
+                  workspace_id: tm.workspace_id,
+                  user_id: tm.joined_user_id,
+                  from_user_id: user.id,
+                  type: "mention",
+                  title: args.title,
+                  body: args.body ?? null,
+                });
+                if (error) throw error;
+                result = { ok: true, kind: "mention_member", to: tm.display_name };
+              }
             }
 
           } catch (e) {
