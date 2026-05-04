@@ -631,6 +631,61 @@ Deno.serve(async (req) => {
               if (!/^[\d\s+\-*/().,%^]+$/.test(expr)) throw new Error("Expression invalide");
               const val = Function(`"use strict";return (${expr.replace(/\^/g, "**").replace(/,/g, ".")})`)();
               result = { ok: true, kind: "calculate", expression: expr, value: val };
+            } else if (name === "remember") {
+              const scope = args.scope as string;
+              const { data: mem, error } = await supabase.from("memories").insert({
+                user_id: user.id,
+                workspace_id: scope === "global" ? null : ws?.id ?? null,
+                project_id: scope === "project" ? projectId ?? null : null,
+                scope,
+                key: args.key ?? null,
+                content: String(args.content || ""),
+              }).select().single();
+              if (error) throw error;
+              result = { ok: true, kind: "remember", id: mem.id, scope };
+            } else if (name === "recall_memories") {
+              const scope = args.scope ?? "all";
+              let q = supabase.from("memories").select("scope, key, content, project_id, created_at").order("created_at", { ascending: false }).limit(40);
+              if (scope !== "all") q = q.eq("scope", scope);
+              const { data } = await q;
+              let mems = data ?? [];
+              if (args.query) {
+                const ql = String(args.query).toLowerCase();
+                mems = mems.filter((m: any) => (m.content || "").toLowerCase().includes(ql) || (m.key || "").toLowerCase().includes(ql));
+              }
+              result = { ok: true, kind: "recall_memories", count: mems.length, memories: mems.slice(0, 20) };
+            } else if (name === "list_projects") {
+              const { data } = await supabase.from("projects").select("id, name, client, location, type, deadline").order("updated_at", { ascending: false });
+              result = { ok: true, kind: "list_projects", projects: data ?? [] };
+            } else if (name === "list_team") {
+              const { data } = await supabase.from("team_members").select("id, display_name, email, role_label, status, joined_user_id");
+              result = { ok: true, kind: "list_team", members: data ?? [] };
+            } else if (name === "list_team_work") {
+              const limit = Math.min(30, args.limit || 10);
+              let aq = supabase.from("artifacts").select("id, type, title, project_id, user_id, created_at").order("created_at", { ascending: false }).limit(limit);
+              if (args.project_id) aq = aq.eq("project_id", args.project_id);
+              if (args.member_id) aq = aq.eq("user_id", args.member_id);
+              let cq = supabase.from("conversations").select("id, title, project_id, user_id, updated_at").order("updated_at", { ascending: false }).limit(limit);
+              if (args.project_id) cq = cq.eq("project_id", args.project_id);
+              if (args.member_id) cq = cq.eq("user_id", args.member_id);
+              const [{ data: arts }, { data: convs }] = await Promise.all([aq, cq]);
+              result = { ok: true, kind: "list_team_work", artifacts: arts ?? [], conversations: convs ?? [] };
+            } else if (name === "mention_member") {
+              const { data: tm } = await supabase.from("team_members").select("joined_user_id, display_name, workspace_id").eq("id", args.team_member_id).maybeSingle();
+              if (!tm?.joined_user_id) {
+                result = { ok: false, error: "Membre non encore inscrit" };
+              } else {
+                const { error } = await supabase.from("notifications").insert({
+                  workspace_id: tm.workspace_id,
+                  user_id: tm.joined_user_id,
+                  from_user_id: user.id,
+                  type: "mention",
+                  title: args.title,
+                  body: args.body ?? null,
+                });
+                if (error) throw error;
+                result = { ok: true, kind: "mention_member", to: tm.display_name };
+              }
             }
 
           } catch (e) {
