@@ -20,6 +20,7 @@ type Message = {
 
 export default function Agent() {
   const { user } = useAuth();
+  const { activeProjectId, projects } = useWorkspace();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -27,10 +28,14 @@ export default function Agent() {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const activeProject = projects.find((p) => p.id === activeProjectId);
+
   useEffect(() => {
     if (!user) return;
+    setActiveId(null);
     loadConversations();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, activeProjectId]);
 
   useEffect(() => {
     if (activeId) loadMessages(activeId);
@@ -42,12 +47,13 @@ export default function Agent() {
   }, [messages]);
 
   async function loadConversations() {
-    const { data } = await supabase
+    let q = supabase
       .from("conversations")
       .select("id, title, created_at")
       .order("created_at", { ascending: false });
+    q = activeProjectId ? q.eq("project_id", activeProjectId) : q.is("project_id", null);
+    const { data } = await q;
     setConversations(data ?? []);
-    if (data?.length && !activeId) setActiveId(data[0].id);
   }
 
   async function loadMessages(id: string) {
