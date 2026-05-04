@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           id: string
           mime_type: string
+          project_id: string | null
           title: string
           type: string
           updated_at: string
@@ -31,6 +32,7 @@ export type Database = {
           created_at?: string
           id?: string
           mime_type?: string
+          project_id?: string | null
           title?: string
           type: string
           updated_at?: string
@@ -42,6 +44,7 @@ export type Database = {
           created_at?: string
           id?: string
           mime_type?: string
+          project_id?: string | null
           title?: string
           type?: string
           updated_at?: string
@@ -50,10 +53,80 @@ export type Database = {
         }
         Relationships: []
       }
+      cabinet_profile: {
+        Row: {
+          brand_values: string | null
+          clientele: string | null
+          created_at: string
+          deliverables: string | null
+          email_signature: string | null
+          email_templates: Json | null
+          extra: Json | null
+          id: string
+          materials_pref: string | null
+          name: string | null
+          process: string | null
+          project_types: string | null
+          references_text: string | null
+          style: string | null
+          suppliers: string | null
+          tone: string | null
+          tools: string | null
+          typical_pricing: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          brand_values?: string | null
+          clientele?: string | null
+          created_at?: string
+          deliverables?: string | null
+          email_signature?: string | null
+          email_templates?: Json | null
+          extra?: Json | null
+          id?: string
+          materials_pref?: string | null
+          name?: string | null
+          process?: string | null
+          project_types?: string | null
+          references_text?: string | null
+          style?: string | null
+          suppliers?: string | null
+          tone?: string | null
+          tools?: string | null
+          typical_pricing?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          brand_values?: string | null
+          clientele?: string | null
+          created_at?: string
+          deliverables?: string | null
+          email_signature?: string | null
+          email_templates?: Json | null
+          extra?: Json | null
+          id?: string
+          materials_pref?: string | null
+          name?: string | null
+          process?: string | null
+          project_types?: string | null
+          references_text?: string | null
+          style?: string | null
+          suppliers?: string | null
+          tone?: string | null
+          tools?: string | null
+          typical_pricing?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
           id: string
+          project_id: string | null
           title: string
           updated_at: string
           user_id: string
@@ -62,6 +135,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          project_id?: string | null
           title?: string
           updated_at?: string
           user_id: string
@@ -70,8 +144,42 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          project_id?: string | null
           title?: string
           updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
+      memories: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          key: string | null
+          project_id: string | null
+          scope: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          key?: string | null
+          project_id?: string | null
+          scope: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          key?: string | null
+          project_id?: string | null
+          scope?: string
           user_id?: string
           workspace_id?: string | null
         }
@@ -121,6 +229,45 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          from_user_id: string | null
+          id: string
+          payload: Json | null
+          read_at: string | null
+          title: string | null
+          type: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          from_user_id?: string | null
+          id?: string
+          payload?: Json | null
+          read_at?: string | null
+          title?: string | null
+          type: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          from_user_id?: string | null
+          id?: string
+          payload?: Json | null
+          read_at?: string | null
+          title?: string | null
+          type?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -128,6 +275,8 @@ export type Database = {
           full_name: string | null
           id: string
           locale: string | null
+          onboarding_completed: boolean
+          onboarding_level: string | null
           updated_at: string
         }
         Insert: {
@@ -136,6 +285,8 @@ export type Database = {
           full_name?: string | null
           id: string
           locale?: string | null
+          onboarding_completed?: boolean
+          onboarding_level?: string | null
           updated_at?: string
         }
         Update: {
@@ -144,7 +295,60 @@ export type Database = {
           full_name?: string | null
           id?: string
           locale?: string | null
+          onboarding_completed?: boolean
+          onboarding_level?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          brief: string | null
+          budget: string | null
+          client: string | null
+          created_at: string
+          data: Json | null
+          deadline: string | null
+          id: string
+          location: string | null
+          name: string
+          owner_id: string
+          surface: string | null
+          type: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          brief?: string | null
+          budget?: string | null
+          client?: string | null
+          created_at?: string
+          data?: Json | null
+          deadline?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          owner_id: string
+          surface?: string | null
+          type?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          brief?: string | null
+          budget?: string | null
+          client?: string | null
+          created_at?: string
+          data?: Json | null
+          deadline?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          owner_id?: string
+          surface?: string | null
+          type?: string | null
+          updated_at?: string
+          workspace_id?: string
         }
         Relationships: []
       }
@@ -207,6 +411,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      team_members: {
+        Row: {
+          created_at: string
+          display_name: string
+          email: string | null
+          id: string
+          invite_token: string
+          invited_by: string
+          joined_user_id: string | null
+          role_label: string
+          status: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          email?: string | null
+          id?: string
+          invite_token?: string
+          invited_by: string
+          joined_user_id?: string | null
+          role_label?: string
+          status?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          email?: string | null
+          id?: string
+          invite_token?: string
+          invited_by?: string
+          joined_user_id?: string | null
+          role_label?: string
+          status?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
