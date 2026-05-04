@@ -88,7 +88,11 @@ export default function Agent() {
     if (!user) return;
     const { data, error } = await supabase
       .from("conversations")
-      .insert({ user_id: user.id, title: "Nouvelle conversation" })
+      .insert({
+        user_id: user.id,
+        title: "Nouvelle conversation",
+        project_id: activeProjectId,
+      })
       .select()
       .single();
     if (error) {
@@ -109,6 +113,7 @@ export default function Agent() {
         .insert({
           user_id: user.id,
           title: input.slice(0, 60),
+          project_id: activeProjectId,
         })
         .select()
         .single();
