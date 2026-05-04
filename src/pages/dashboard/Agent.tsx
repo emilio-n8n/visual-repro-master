@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/hooks/useAuth";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { Send, Plus, MessageSquare, Loader2 } from "lucide-react";
+import { Send, Plus, MessageSquare, Loader2, FolderOpen } from "lucide-react";
 import { ArtifactPreview } from "@/components/ArtifactPreview";
 
 type Conversation = { id: string; title: string; created_at: string };
