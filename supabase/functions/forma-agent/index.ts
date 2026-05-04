@@ -190,6 +190,88 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "remember",
+      description: "Sauvegarde un fait/préférence en mémoire. Scopes: 'project' (projet courant), 'workspace' (cabinet, partagé équipe), 'global' (préférences perso transverses).",
+      parameters: {
+        type: "object",
+        properties: {
+          scope: { type: "string", enum: ["project", "workspace", "global"] },
+          key: { type: "string", description: "Étiquette courte (ex: 'preference_couleurs', 'contrainte_budget')" },
+          content: { type: "string", description: "Le souvenir, en une phrase claire." },
+        },
+        required: ["scope", "content"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "recall_memories",
+      description: "Recherche des souvenirs (par scope, ou tous).",
+      parameters: {
+        type: "object",
+        properties: {
+          scope: { type: "string", enum: ["project", "workspace", "global", "all"] },
+          query: { type: "string", description: "Mots-clés (optionnel)." },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_projects",
+      description: "Liste les projets du studio.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_team",
+      description: "Liste les membres de l'équipe et leur rôle.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_team_work",
+      description: "Liste les derniers livrables/conversations produits par l'équipe (filtrable par membre ou projet).",
+      parameters: {
+        type: "object",
+        properties: {
+          member_id: { type: "string", description: "user_id d'un membre (optionnel)" },
+          project_id: { type: "string", description: "id d'un projet (optionnel)" },
+          limit: { type: "number" },
+        },
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "mention_member",
+      description: "Notifie un membre de l'équipe (mention).",
+      parameters: {
+        type: "object",
+        properties: {
+          team_member_id: { type: "string" },
+          title: { type: "string" },
+          body: { type: "string" },
+        },
+        required: ["team_member_id", "title"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 function wrapSlideshow(title: string, slides: string[]): string {
