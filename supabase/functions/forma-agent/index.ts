@@ -337,12 +337,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { conversationId, message } = await req.json();
+    const { conversationId, message, projectId } = await req.json();
     if (!conversationId || !message) {
       return new Response(JSON.stringify({ error: "Missing fields" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Ensure conversation has correct project_id
+    if (projectId !== undefined) {
+      await supabase.from("conversations").update({ project_id: projectId }).eq("id", conversationId);
     }
 
     await supabase.from("messages").insert({
@@ -351,6 +356,53 @@ Deno.serve(async (req) => {
       role: "user",
       content: message,
     });
+
+    // Load workspace, cabinet profile, project, and memories context
+    const { data: ws } = await supabase
+      .from("workspaces").select("id, name").limit(1).maybeSingle();
+    const wsId = ws?.id ?? null;
+
+    const [{ data: cabinet }, { data: project }, { data: memList }] = await Promise.all([
+      wsId ? supabase.from("cabinet_profile").select("*").eq("workspace_id", wsId).maybeSingle() : Promise.resolve({ data: null }),
+      projectId ? supabase.from("projects").select("*").eq("id", projectId).maybeSingle() : Promise.resolve({ data: null }),
+      supabase.from("memories").select("scope, key, content, project_id").or(
+        `scope.eq.global,workspace_id.eq.${wsId ?? "00000000-0000-0000-0000-000000000000"}`
+      ).order("created_at", { ascending: false }).limit(60),
+    ]);
+
+    let contextBlock = "";
+    if (cabinet) {
+      contextBlock += `\n\n## Cabinet (${cabinet.name ?? ""})\n`;
+      const fields = ["style","project_types","tone","email_signature","tools","deliverables","clientele","brand_values","references_text","process","materials_pref","suppliers","typical_pricing"];
+      for (const f of fields) {
+        const v = (cabinet as any)[f];
+        if (v) contextBlock += `- ${f}: ${String(v).slice(0, 300)}\n`;
+      }
+      const tpl = (cabinet as any).email_templates;
+      if (tpl && Object.keys(tpl).length) {
+        contextBlock += `- email_templates: ${Object.keys(tpl).join(", ")}\n`;
+      }
+    }
+    if (project) {
+      contextBlock += `\n## Projet courant: ${project.name}\n`;
+      for (const f of ["client","location","type","surface","budget","deadline","brief"]) {
+        const v = (project as any)[f];
+        if (v) contextBlock += `- ${f}: ${v}\n`;
+      }
+    } else {
+      contextBlock += `\n## Projet courant: (hors projet)\n`;
+    }
+    const relevantMems = (memList ?? []).filter((m: any) =>
+      m.scope === "global" || m.scope === "workspace" || (m.scope === "project" && m.project_id === projectId)
+    );
+    if (relevantMems.length) {
+      contextBlock += `\n## Mémoires (${relevantMems.length})\n`;
+      for (const m of relevantMems.slice(0, 30)) {
+        contextBlock += `- [${m.scope}${m.key ? ":"+m.key : ""}] ${String(m.content).slice(0, 240)}\n`;
+      }
+    }
+
+    const SYSTEM_PROMPT = BASE_PROMPT + contextBlock;
 
     const { data: history } = await supabase
       .from("messages")
