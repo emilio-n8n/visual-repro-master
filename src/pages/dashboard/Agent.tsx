@@ -268,16 +268,24 @@ export default function Agent() {
 
       {/* Chat area */}
       <div className="flex-1 flex flex-col">
-        <div className="px-8 py-5 border-b border-[#C4A264]/15">
-          <h1
-            className="text-2xl text-[#C4A264]"
-            style={{ fontFamily: "'Cormorant Garamond', serif" }}
-          >
-            FORMA Agent
-          </h1>
-          <p className="text-xs text-[#F0EAE0]/50 mt-1">
-            Votre assistant IA pour rendus, ambiances et matériaux.
-          </p>
+        <div className="px-8 py-5 border-b border-[#C4A264]/15 flex items-center justify-between gap-4">
+          <div>
+            <h1
+              className="text-2xl text-[#C4A264]"
+              style={{ fontFamily: "'Cormorant Garamond', serif" }}
+            >
+              FORMA Agent
+            </h1>
+            <p className="text-xs text-[#F0EAE0]/50 mt-1">
+              Votre assistant IA pour rendus, ambiances et matériaux.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 border border-[#C4A264]/20 rounded-sm text-xs">
+            <FolderOpen className="w-3 h-3 text-[#C4A264]" />
+            <span className="text-[#F0EAE0]/70">
+              {activeProject ? activeProject.name : "Hors projet"}
+            </span>
+          </div>
         </div>
 
         <div ref={scrollRef} className="flex-1 overflow-auto px-8 py-6 space-y-6">
