@@ -147,7 +147,7 @@ export default function Agent() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ conversationId: convId, message: messageText }),
+        body: JSON.stringify({ conversationId: convId, message: messageText, projectId: activeProjectId }),
       });
 
       if (!resp.ok || !resp.body) {
