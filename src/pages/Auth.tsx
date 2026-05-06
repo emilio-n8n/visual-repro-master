@@ -23,7 +23,14 @@ export default function AuthPage() {
   }, [mode]);
 
   useEffect(() => {
-    if (session) navigate("/dashboard", { replace: true });
+    if (session) {
+      const joinToken = localStorage.getItem("forma.joinToken");
+      if (joinToken) {
+        navigate(`/join/${joinToken}`, { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+    }
   }, [session, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {

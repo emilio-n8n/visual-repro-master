@@ -26,6 +26,8 @@ export const ProtectedRoute = ({
   }
 
   if (requireOnboarding && onboardingCompleted === false) {
+    const joinToken = localStorage.getItem("forma.joinToken");
+    if (joinToken) return <Navigate to={`/join/${joinToken}`} replace />;
     return <Navigate to="/onboarding" replace />;
   }
 
