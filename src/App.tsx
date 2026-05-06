@@ -41,6 +41,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/dashboard/studio/:id"
+                element={
+                  <ProtectedRoute>
+                    <Studio />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
@@ -52,7 +60,6 @@ const App = () => (
                 <Route path="render" element={<Render />} />
                 <Route path="agent" element={<Agent />} />
                 <Route path="settings" element={<Settings />} />
-                <Route path="studio/:id" element={<Studio />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
