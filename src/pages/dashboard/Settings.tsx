@@ -201,6 +201,67 @@ export default function Settings() {
         </div>
       </Section>
 
+      {/* Team management */}
+      <Section icon={Users} title={`Équipe (${team.length})`}>
+        <div className="space-y-4">
+          {team.length > 0 && (
+            <div className="divide-y divide-[#C4A264]/10 border border-[#C4A264]/15 rounded-sm">
+              {team.map((m) => (
+                <div key={m.id} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-white/5">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm text-[#F0EAE0] truncate">{m.display_name}</div>
+                    <div className="text-[10px] uppercase tracking-[0.15em] text-[#C4A264]/70 mt-0.5">
+                      {m.role_label} {m.email ? `· ${m.email}` : ""} · {m.status === "joined" ? "rejoint" : "en attente"}
+                    </div>
+                  </div>
+                  <Button size="sm" variant="ghost" className="h-8 text-[#F0EAE0]/80 hover:text-[#C4A264]" onClick={() => copyInviteLink(m.invite_token)}>
+                    <Link2 className="w-3.5 h-3.5 mr-1" /> Lien
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-8 px-2 text-[#F0EAE0]/70 hover:text-red-400" onClick={() => removeMember(m.id)}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="border border-dashed border-[#C4A264]/25 rounded-sm p-4 space-y-3">
+            <div className="text-xs uppercase tracking-[0.15em] text-[#C4A264]">Ajouter un membre</div>
+            <div className="grid grid-cols-12 gap-2">
+              <Input
+                placeholder="Nom prénom"
+                value={newMember.name}
+                onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                className="col-span-4 bg-black/40 border-[#C4A264]/20 text-[#F0EAE0]"
+              />
+              <Input
+                placeholder="email (optionnel)"
+                value={newMember.email}
+                onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                className="col-span-4 bg-black/40 border-[#C4A264]/20 text-[#F0EAE0]"
+              />
+              <select
+                value={newMember.role}
+                onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
+                className="col-span-3 bg-black/40 border border-[#C4A264]/20 text-[#F0EAE0] text-sm h-10 px-2 rounded-sm"
+              >
+                {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <Button
+                onClick={addMember}
+                disabled={addingMember || !newMember.name.trim()}
+                className="col-span-1 bg-[#C4A264] hover:bg-[#C4A264]/90 text-black px-2"
+              >
+                {addingMember ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              </Button>
+            </div>
+            <p className="text-[11px] text-[#F0EAE0]/40">
+              Un lien d'invitation unique est créé. Copiez-le et envoyez-le à votre collaborateur.
+            </p>
+          </div>
+        </div>
+      </Section>
+
       {/* Artifacts library */}
       <Section icon={FileBox} title={`Livrables (${artifacts.length})`}>
         {artifacts.length === 0 ? (
