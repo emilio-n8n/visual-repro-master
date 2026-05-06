@@ -5,11 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, User, Building2, FileBox, Trash2, Download, ExternalLink } from "lucide-react";
+import { Loader2, User, Building2, FileBox, Trash2, Download, ExternalLink, Users, Plus, Copy, Link2 } from "lucide-react";
 
 type Profile = { id: string; full_name: string | null; avatar_url: string | null; locale: string | null };
 type Workspace = { id: string; name: string; slug: string; plan: string };
 type Artifact = { id: string; type: string; title: string; created_at: string; mime_type: string; content: string };
+type TeamMember = { id: string; display_name: string; email: string | null; role_label: string; status: string; invite_token: string };
+
+const ROLE_OPTIONS = [
+  "Architecte associé", "Architecte chef de projet", "Architecte d'intérieur",
+  "Designer", "Stagiaire", "Assistant·e", "Direction commerciale", "Direction administrative",
+];
 
 export default function Settings() {
   const { user, signOut } = useAuth();
@@ -18,6 +24,10 @@ export default function Settings() {
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingWs, setSavingWs] = useState(false);
+
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [newMember, setNewMember] = useState({ name: "", email: "", role: "Architecte chef de projet" });
+  const [addingMember, setAddingMember] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -29,8 +39,52 @@ export default function Settings() {
       setProfile(p.data as Profile);
       setWorkspace(w.data as Workspace);
       setArtifacts((a.data ?? []) as Artifact[]);
+      if (w.data) loadTeam((w.data as Workspace).id);
     });
   }, [user]);
+
+  async function loadTeam(wsId: string) {
+    const { data } = await supabase
+      .from("team_members")
+      .select("id, display_name, email, role_label, status, invite_token")
+      .eq("workspace_id", wsId)
+      .order("created_at", { ascending: true });
+    setTeam((data ?? []) as TeamMember[]);
+  }
+
+  async function addMember() {
+    if (!workspace || !user || !newMember.name.trim()) return;
+    setAddingMember(true);
+    const { error } = await supabase.from("team_members").insert({
+      workspace_id: workspace.id,
+      invited_by: user.id,
+      display_name: newMember.name.trim(),
+      email: newMember.email.trim() || null,
+      role_label: newMember.role,
+    });
+    setAddingMember(false);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      return;
+    }
+    setNewMember({ name: "", email: "", role: newMember.role });
+    await loadTeam(workspace.id);
+    toast({ title: "Membre ajouté", description: "Lien d'invitation prêt à partager." });
+  }
+
+  async function removeMember(id: string) {
+    if (!confirm("Retirer ce membre ?")) return;
+    const { error } = await supabase.from("team_members").delete().eq("id", id);
+    if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    else setTeam((p) => p.filter((m) => m.id !== id));
+  }
+
+  function copyInviteLink(token: string) {
+    const url = `${window.location.origin}/join/${token}`;
+    navigator.clipboard.writeText(url);
+    toast({ title: "Lien copié", description: "Partagez-le avec ce membre." });
+  }
+
 
   async function saveProfile() {
     if (!profile || !user) return;
