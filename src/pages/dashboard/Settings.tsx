@@ -5,11 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, User, Building2, FileBox, Trash2, Download, ExternalLink } from "lucide-react";
+import { Loader2, User, Building2, FileBox, Trash2, Download, ExternalLink, Users, Plus, Copy, Link2 } from "lucide-react";
 
 type Profile = { id: string; full_name: string | null; avatar_url: string | null; locale: string | null };
 type Workspace = { id: string; name: string; slug: string; plan: string };
 type Artifact = { id: string; type: string; title: string; created_at: string; mime_type: string; content: string };
+type TeamMember = { id: string; display_name: string; email: string | null; role_label: string; status: string; invite_token: string };
+
+const ROLE_OPTIONS = [
+  "Architecte associé", "Architecte chef de projet", "Architecte d'intérieur",
+  "Designer", "Stagiaire", "Assistant·e", "Direction commerciale", "Direction administrative",
+];
 
 export default function Settings() {
   const { user, signOut } = useAuth();
@@ -18,6 +24,10 @@ export default function Settings() {
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingWs, setSavingWs] = useState(false);
+
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [newMember, setNewMember] = useState({ name: "", email: "", role: "Architecte chef de projet" });
+  const [addingMember, setAddingMember] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -29,8 +39,52 @@ export default function Settings() {
       setProfile(p.data as Profile);
       setWorkspace(w.data as Workspace);
       setArtifacts((a.data ?? []) as Artifact[]);
+      if (w.data) loadTeam((w.data as Workspace).id);
     });
   }, [user]);
+
+  async function loadTeam(wsId: string) {
+    const { data } = await supabase
+      .from("team_members")
+      .select("id, display_name, email, role_label, status, invite_token")
+      .eq("workspace_id", wsId)
+      .order("created_at", { ascending: true });
+    setTeam((data ?? []) as TeamMember[]);
+  }
+
+  async function addMember() {
+    if (!workspace || !user || !newMember.name.trim()) return;
+    setAddingMember(true);
+    const { error } = await supabase.from("team_members").insert({
+      workspace_id: workspace.id,
+      invited_by: user.id,
+      display_name: newMember.name.trim(),
+      email: newMember.email.trim() || null,
+      role_label: newMember.role,
+    });
+    setAddingMember(false);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      return;
+    }
+    setNewMember({ name: "", email: "", role: newMember.role });
+    await loadTeam(workspace.id);
+    toast({ title: "Membre ajouté", description: "Lien d'invitation prêt à partager." });
+  }
+
+  async function removeMember(id: string) {
+    if (!confirm("Retirer ce membre ?")) return;
+    const { error } = await supabase.from("team_members").delete().eq("id", id);
+    if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    else setTeam((p) => p.filter((m) => m.id !== id));
+  }
+
+  function copyInviteLink(token: string) {
+    const url = `${window.location.origin}/join/${token}`;
+    navigator.clipboard.writeText(url);
+    toast({ title: "Lien copié", description: "Partagez-le avec ce membre." });
+  }
+
 
   async function saveProfile() {
     if (!profile || !user) return;
@@ -144,6 +198,67 @@ export default function Settings() {
             {savingWs && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Enregistrer
           </Button>
+        </div>
+      </Section>
+
+      {/* Team management */}
+      <Section icon={Users} title={`Équipe (${team.length})`}>
+        <div className="space-y-4">
+          {team.length > 0 && (
+            <div className="divide-y divide-[#C4A264]/10 border border-[#C4A264]/15 rounded-sm">
+              {team.map((m) => (
+                <div key={m.id} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-white/5">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm text-[#F0EAE0] truncate">{m.display_name}</div>
+                    <div className="text-[10px] uppercase tracking-[0.15em] text-[#C4A264]/70 mt-0.5">
+                      {m.role_label} {m.email ? `· ${m.email}` : ""} · {m.status === "joined" ? "rejoint" : "en attente"}
+                    </div>
+                  </div>
+                  <Button size="sm" variant="ghost" className="h-8 text-[#F0EAE0]/80 hover:text-[#C4A264]" onClick={() => copyInviteLink(m.invite_token)}>
+                    <Link2 className="w-3.5 h-3.5 mr-1" /> Lien
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-8 px-2 text-[#F0EAE0]/70 hover:text-red-400" onClick={() => removeMember(m.id)}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="border border-dashed border-[#C4A264]/25 rounded-sm p-4 space-y-3">
+            <div className="text-xs uppercase tracking-[0.15em] text-[#C4A264]">Ajouter un membre</div>
+            <div className="grid grid-cols-12 gap-2">
+              <Input
+                placeholder="Nom prénom"
+                value={newMember.name}
+                onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                className="col-span-4 bg-black/40 border-[#C4A264]/20 text-[#F0EAE0]"
+              />
+              <Input
+                placeholder="email (optionnel)"
+                value={newMember.email}
+                onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                className="col-span-4 bg-black/40 border-[#C4A264]/20 text-[#F0EAE0]"
+              />
+              <select
+                value={newMember.role}
+                onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
+                className="col-span-3 bg-black/40 border border-[#C4A264]/20 text-[#F0EAE0] text-sm h-10 px-2 rounded-sm"
+              >
+                {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <Button
+                onClick={addMember}
+                disabled={addingMember || !newMember.name.trim()}
+                className="col-span-1 bg-[#C4A264] hover:bg-[#C4A264]/90 text-black px-2"
+              >
+                {addingMember ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              </Button>
+            </div>
+            <p className="text-[11px] text-[#F0EAE0]/40">
+              Un lien d'invitation unique est créé. Copiez-le et envoyez-le à votre collaborateur.
+            </p>
+          </div>
         </div>
       </Section>
 
