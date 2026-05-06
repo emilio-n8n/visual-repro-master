@@ -15,6 +15,7 @@ import Overview from "./pages/dashboard/Overview.tsx";
 import Render from "./pages/dashboard/Render.tsx";
 import Agent from "./pages/dashboard/Agent.tsx";
 import Settings from "./pages/dashboard/Settings.tsx";
+import Studio from "./pages/dashboard/Studio.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => (
                 <Route path="render" element={<Render />} />
                 <Route path="agent" element={<Agent />} />
                 <Route path="settings" element={<Settings />} />
+                <Route path="studio/:id" element={<Studio />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
