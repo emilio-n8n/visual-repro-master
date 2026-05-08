@@ -936,12 +936,11 @@ const BentoCard = ({
     style={{
       opacity: 0,
       transform: "translateY(20px)",
-      transition: "all 0.8s",
+      transition: "opacity 0.8s, transform 0.8s, border-color 0.3s",
       padding: big ? 40 : 32,
       border: `1px solid ${COLORS.border}`,
       borderRadius: 8,
       background: COLORS.surface,
-      transition: "border-color 0.3s, transform 0.3s",
     }}
     onMouseEnter={(e) => {
       (e.currentTarget as HTMLElement).style.borderColor = COLORS.gold + "60";
