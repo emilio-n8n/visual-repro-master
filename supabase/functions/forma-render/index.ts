@@ -118,15 +118,15 @@ Deno.serve(async (req) => {
       userContent.push({ type: "image_url", image_url: { url: `data:${mime};base64,${base64}` } });
     }
 
-    // Call Lovable AI Gateway with image input
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Call AI Gateway (Lovable by default, configurable via AI_GATEWAY_URL/AI_API_KEY/AI_IMAGE_MODEL)
+    const aiRes = await fetch(`${AI_GATEWAY_URL}/chat/completions`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${AI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3.1-flash-image-preview",
+        model: AI_IMAGE_MODEL,
         messages: [{ role: "user", content: userContent }],
         modalities: ["image", "text"],
       }),
