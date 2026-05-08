@@ -1,144 +1,37 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import "@/styles/forma-landing.css";
+import { ArrowRight, Sparkles, Image as ImageIcon, Bot, Zap, Layers, Shield, Check } from "lucide-react";
+
+const COLORS = {
+  bg: "#0a0908",
+  surface: "#13110f",
+  ivory: "#F0EAE0",
+  ivoryDim: "rgba(240,234,224,0.55)",
+  gold: "#C4A264",
+  goldSoft: "rgba(196,162,100,0.12)",
+  border: "rgba(240,234,224,0.08)",
+};
+
+const fontSerif = "'Cormorant Garamond', 'Times New Roman', serif";
+const fontSans = "'DM Sans', system-ui, sans-serif";
 
 const Index = () => {
-  const cursorRef = useRef<HTMLDivElement>(null);
-  const ringRef = useRef<HTMLDivElement>(null);
-  const sliderRef = useRef<HTMLDivElement>(null);
-  const afterRef = useRef<HTMLDivElement>(null);
-  const dividerRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
 
-  // Custom cursor
+  // Inject Google Fonts once
   useEffect(() => {
-    const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    if (!fine) return;
-    const cursor = cursorRef.current!;
-    const ring = ringRef.current!;
-    let mx = 0, my = 0, rx = 0, ry = 0, raf = 0;
-
-    const onMove = (e: MouseEvent) => {
-      mx = e.clientX; my = e.clientY;
-      cursor.style.left = mx + "px";
-      cursor.style.top = my + "px";
-    };
-    const tick = () => {
-      rx += (mx - rx) * 0.12;
-      ry += (my - ry) * 0.12;
-      ring.style.left = rx + "px";
-      ring.style.top = ry + "px";
-      raf = requestAnimationFrame(tick);
-    };
-    document.addEventListener("mousemove", onMove);
-    raf = requestAnimationFrame(tick);
-
-    const enter = () => {
-      cursor.style.transform = "translate(-50%, -50%) scale(2)";
-      ring.style.width = "60px"; ring.style.height = "60px"; ring.style.opacity = "0.5";
-    };
-    const leave = () => {
-      cursor.style.transform = "translate(-50%, -50%) scale(1)";
-      ring.style.width = "36px"; ring.style.height = "36px"; ring.style.opacity = "1";
-    };
-    const targets = document.querySelectorAll(".forma-landing a, .forma-landing button, .slider-divider");
-    targets.forEach((el) => {
-      el.addEventListener("mouseenter", enter);
-      el.addEventListener("mouseleave", leave);
-    });
-
-    return () => {
-      document.removeEventListener("mousemove", onMove);
-      cancelAnimationFrame(raf);
-      targets.forEach((el) => {
-        el.removeEventListener("mouseenter", enter);
-        el.removeEventListener("mouseleave", leave);
-      });
-    };
-  }, []);
-
-  // Scroll reveal
-  useEffect(() => {
-    const els = document.querySelectorAll(".forma-landing .reveal");
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add("visible");
-            io.unobserve(e.target);
-          }
-        });
-      },
-      { threshold: 0.12 }
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, []);
-
-  // Before/after slider with auto-animation until first interaction
-  useEffect(() => {
-    const slider = sliderRef.current!;
-    const after = afterRef.current!;
-    const divider = dividerRef.current!;
-    if (!slider || !after || !divider) return;
-
-    let dragging = false;
-    let interacted = false;
-    let pos = 50;
-    let dir = 1;
-    let raf = 0;
-
-    const setPos = (pct: number) => {
-      pct = Math.max(5, Math.min(95, pct));
-      pos = pct;
-      after.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
-      divider.style.left = pct + "%";
-    };
-    const setFromX = (x: number) => {
-      const rect = slider.getBoundingClientRect();
-      setPos(((x - rect.left) / rect.width) * 100);
-    };
-
-    const onDown = (e: MouseEvent | TouchEvent) => {
-      dragging = true;
-      interacted = true;
-      e.preventDefault();
-    };
-    const onUp = () => { dragging = false; };
-    const onMove = (e: MouseEvent) => { if (dragging) setFromX(e.clientX); };
-    const onTouchMove = (e: TouchEvent) => { if (dragging) setFromX(e.touches[0].clientX); };
-
-    divider.addEventListener("mousedown", onDown);
-    divider.addEventListener("touchstart", onDown, { passive: false });
-    document.addEventListener("mouseup", onUp);
-    document.addEventListener("touchend", onUp);
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("touchmove", onTouchMove);
-
-    const auto = () => {
-      if (!interacted) {
-        pos += dir * 0.15;
-        if (pos > 75) dir = -1;
-        if (pos < 25) dir = 1;
-        setPos(pos);
-      }
-      raf = requestAnimationFrame(auto);
-    };
-    raf = requestAnimationFrame(auto);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      divider.removeEventListener("mousedown", onDown);
-      divider.removeEventListener("touchstart", onDown);
-      document.removeEventListener("mouseup", onUp);
-      document.removeEventListener("touchend", onUp);
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("touchmove", onTouchMove);
-    };
+    if (document.getElementById("forma-fonts")) return;
+    const link = document.createElement("link");
+    link.id = "forma-fonts";
+    link.rel = "stylesheet";
+    link.href =
+      "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap";
+    document.head.appendChild(link);
   }, []);
 
   // SEO
   useEffect(() => {
-    document.title = "FORMA — Intelligence architecturale pour architectes";
+    document.title = "FORMA — L'IA des architectes";
     const setMeta = (name: string, content: string, attr: "name" | "property" = "name") => {
       let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
       if (!el) {
@@ -150,385 +43,961 @@ const Index = () => {
     };
     setMeta(
       "description",
-      "FORMA combine rendus 3D photoréalistes par IA et agent intelligent pour automatiser le quotidien des architectes."
+      "FORMA — Studio IA pour architectes. Rendus photoréalistes, agent assistant, mémoire de cabinet, équipe en temps réel."
     );
-    setMeta("og:title", "FORMA — Intelligence architecturale", "property");
+    setMeta("og:title", "FORMA — L'IA des architectes", "property");
     setMeta(
       "og:description",
-      "De la maquette 3D au rendu photoréaliste. De l'email à la gestion de projet. Conçu pour les architectes.",
+      "Rendus, écriture, gestion. Un studio IA conçu pour la pratique architecturale.",
       "property"
     );
-    setMeta("og:type", "website", "property");
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    if (!canonical) {
-      canonical = document.createElement("link");
-      canonical.rel = "canonical";
-      document.head.appendChild(canonical);
-    }
-    canonical.href = window.location.origin + "/";
+  }, []);
+
+  // Reveal on scroll
+  useEffect(() => {
+    const els = document.querySelectorAll("[data-reveal]");
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            (e.target as HTMLElement).style.opacity = "1";
+            (e.target as HTMLElement).style.transform = "translateY(0)";
+            io.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+
+  // Subtle parallax on hero orbs
+  useEffect(() => {
+    const onScroll = () => {
+      if (!heroRef.current) return;
+      const y = window.scrollY;
+      const orbs = heroRef.current.querySelectorAll<HTMLElement>("[data-orb]");
+      orbs.forEach((o, i) => {
+        o.style.transform = `translate3d(0, ${y * (i % 2 === 0 ? 0.15 : -0.1)}px, 0)`;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
-    <div className="forma-landing">
-      <div className="forma-noise" />
-      <div ref={cursorRef} className="forma-cursor" />
-      <div ref={ringRef} className="forma-cursor-ring" />
-
-      {/* JSON-LD SoftwareApplication */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "SoftwareApplication",
-            name: "FORMA",
-            applicationCategory: "DesignApplication",
-            operatingSystem: "Web",
-            description:
-              "Plateforme IA pour architectes : rendus 3D photoréalistes et agent intelligent.",
-            offers: { "@type": "Offer", price: "89", priceCurrency: "EUR" },
-          }),
+    <div
+      style={{
+        background: COLORS.bg,
+        color: COLORS.ivory,
+        fontFamily: fontSans,
+        fontWeight: 300,
+        minHeight: "100vh",
+        overflowX: "hidden",
+      }}
+    >
+      {/* Grain overlay */}
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          opacity: 0.035,
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+          mixBlendMode: "overlay",
+          zIndex: 1,
         }}
       />
 
       {/* NAV */}
-      <nav>
-        <a href="#" className="nav-logo">FORM<span>A</span></a>
-        <div className="nav-links">
-          <a href="#render">Render AI</a>
-          <a href="#agent">Agent</a>
-          <a href="#pricing">Tarifs</a>
-          <a href="#about">À propos</a>
-          <Link to="/auth" className="nav-cta">Connexion</Link>
+      <nav
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          padding: "20px 40px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          background: "linear-gradient(to bottom, rgba(10,9,8,0.85), transparent)",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        <Link
+          to="/"
+          style={{
+            fontFamily: fontSerif,
+            fontSize: 22,
+            letterSpacing: "0.4em",
+            color: COLORS.ivory,
+            textDecoration: "none",
+          }}
+        >
+          FORM<span style={{ color: COLORS.gold }}>A</span>
+        </Link>
+        <div className="hidden md:flex items-center gap-10">
+          {[
+            ["Render", "#render"],
+            ["Agent", "#agent"],
+            ["Tarifs", "#pricing"],
+          ].map(([label, href]) => (
+            <a
+              key={href}
+              href={href}
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.25em",
+                textTransform: "uppercase",
+                color: COLORS.ivoryDim,
+                textDecoration: "none",
+              }}
+              className="hover:!text-[#F0EAE0] transition-colors"
+            >
+              {label}
+            </a>
+          ))}
         </div>
+        <Link
+          to="/auth"
+          style={{
+            fontSize: 12,
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            color: COLORS.ivory,
+            border: `1px solid ${COLORS.gold}`,
+            padding: "10px 22px",
+            textDecoration: "none",
+            transition: "all 0.3s",
+          }}
+          className="hover:!bg-[#C4A264] hover:!text-[#0a0908]"
+        >
+          Connexion
+        </Link>
       </nav>
 
       {/* HERO */}
-      <header className="hero">
-        <div className="hero-bg">
-          <div className="hero-grid" />
-          <div className="hero-vignette" />
-          <svg className="hero-shape" viewBox="0 0 700 700" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <polygon points="350,50 650,200 650,500 350,650 50,500 50,200" fill="none" stroke="#C4A264" strokeWidth="1" />
-            <polygon points="350,100 600,220 600,480 350,600 100,480 100,220" fill="none" stroke="#C4A264" strokeWidth="0.5" />
-            <line x1="350" y1="50" x2="350" y2="650" stroke="#C4A264" strokeWidth="0.3" />
-            <line x1="50" y1="200" x2="650" y2="500" stroke="#C4A264" strokeWidth="0.3" />
-            <line x1="650" y1="200" x2="50" y2="500" stroke="#C4A264" strokeWidth="0.3" />
-            <circle cx="350" cy="350" r="120" fill="none" stroke="#C4A264" strokeWidth="0.5" />
-          </svg>
-        </div>
+      <header
+        ref={heroRef}
+        style={{
+          position: "relative",
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "120px 24px 80px",
+          textAlign: "center",
+          zIndex: 2,
+        }}
+      >
+        {/* Animated orbs */}
+        <div
+          data-orb
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: "10%",
+            left: "10%",
+            width: 500,
+            height: 500,
+            background: `radial-gradient(circle, ${COLORS.gold}30 0%, transparent 70%)`,
+            filter: "blur(80px)",
+            zIndex: 0,
+          }}
+        />
+        <div
+          data-orb
+          aria-hidden
+          style={{
+            position: "absolute",
+            bottom: "10%",
+            right: "5%",
+            width: 600,
+            height: 600,
+            background: `radial-gradient(circle, ${COLORS.gold}20 0%, transparent 70%)`,
+            filter: "blur(100px)",
+            zIndex: 0,
+          }}
+        />
 
-        <div className="hero-tag">Intelligence Architecturale</div>
-        <h1 className="hero-title">
-          L'IA qui<br />
-          <em>comprend</em><br />
-          l'architecture.
-        </h1>
-        <p className="hero-sub">
-          De la maquette 3D au rendu photoréaliste. De l'email à la gestion de projet.
-          Un seul outil conçu pour les architectes qui refusent le compromis.
-        </p>
-        <div className="hero-actions">
-          <Link to="/auth" className="btn-primary">Se connecter</Link>
-          <a href="#render" className="btn-ghost">Découvrir les outils</a>
-        </div>
+        {/* Grid background */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: `linear-gradient(${COLORS.border} 1px, transparent 1px), linear-gradient(90deg, ${COLORS.border} 1px, transparent 1px)`,
+            backgroundSize: "80px 80px",
+            maskImage: "radial-gradient(ellipse at center, black 30%, transparent 75%)",
+            zIndex: 0,
+          }}
+        />
 
-        <div className="hero-scroll">Scroll</div>
+        <div style={{ position: "relative", zIndex: 2, maxWidth: 1100 }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 18px",
+              border: `1px solid ${COLORS.gold}40`,
+              borderRadius: 999,
+              fontSize: 11,
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              color: COLORS.gold,
+              marginBottom: 40,
+              background: COLORS.goldSoft,
+            }}
+          >
+            <Sparkles size={12} /> Nouveau · Mémoire & Équipe
+          </div>
+
+          <h1
+            style={{
+              fontFamily: fontSerif,
+              fontWeight: 300,
+              fontSize: "clamp(44px, 9vw, 132px)",
+              lineHeight: 1,
+              letterSpacing: "-0.02em",
+              marginBottom: 32,
+              color: COLORS.ivory,
+            }}
+          >
+            L'IA qui dessine
+            <br />
+            <em style={{ color: COLORS.gold, fontWeight: 400 }}>avec vous.</em>
+          </h1>
+
+          <p
+            style={{
+              fontSize: "clamp(16px, 1.4vw, 20px)",
+              lineHeight: 1.7,
+              color: COLORS.ivoryDim,
+              maxWidth: 640,
+              margin: "0 auto 48px",
+            }}
+          >
+            FORMA est le premier studio IA pensé pour les architectes. Rendus photoréalistes,
+            agent assistant, mémoire de cabinet et collaboration d'équipe — au même endroit.
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link
+              to="/auth"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "16px 32px",
+                background: COLORS.gold,
+                color: COLORS.bg,
+                fontSize: 13,
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
+                fontWeight: 500,
+                textDecoration: "none",
+                transition: "all 0.3s",
+              }}
+              className="hover:!bg-[#D4B87A] hover:scale-[1.02]"
+            >
+              Démarrer mon studio <ArrowRight size={16} />
+            </Link>
+            <a
+              href="#render"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "16px 32px",
+                border: `1px solid ${COLORS.border}`,
+                color: COLORS.ivory,
+                fontSize: 13,
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
+                textDecoration: "none",
+                transition: "all 0.3s",
+              }}
+              className="hover:!border-[#C4A264]"
+            >
+              Voir une démo
+            </a>
+          </div>
+
+          {/* Trust strip */}
+          <div
+            style={{
+              marginTop: 100,
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 48,
+              opacity: 0.5,
+              fontSize: 11,
+              letterSpacing: "0.3em",
+              textTransform: "uppercase",
+            }}
+          >
+            <span>SketchUp</span>
+            <span>·</span>
+            <span>Revit</span>
+            <span>·</span>
+            <span>Rhino</span>
+            <span>·</span>
+            <span>Blender</span>
+            <span>·</span>
+            <span>ArchiCAD</span>
+          </div>
+        </div>
       </header>
 
       {/* STATS */}
-      <div className="stats-bar">
-        <div className="stat-item reveal">
-          <div className="stat-num">4<span>×</span></div>
-          <div className="stat-label">Gain de temps moyen</div>
-        </div>
-        <div className="stat-item reveal">
-          <div className="stat-num">98<span>%</span></div>
-          <div className="stat-label">Précision des rendus</div>
-        </div>
-        <div className="stat-item reveal">
-          <div className="stat-num">12<span>+</span></div>
-          <div className="stat-label">Intégrations natives</div>
-        </div>
-        <div className="stat-item reveal">
-          <div className="stat-num">{"<"} 30<span>s</span></div>
-          <div className="stat-label">Temps de rendu moyen</div>
-        </div>
-      </div>
-
-      {/* RENDER */}
-      <section id="render">
-        <div className="render-section">
-          <div>
-            <div className="section-tag reveal">Render AI</div>
-            <h2 className="section-title reveal">
-              Votre maquette 3D,<br /><em>transcendée.</em>
-            </h2>
-            <p className="section-desc reveal">
-              Téléversez n'importe quel rendu 3D — SketchUp, Revit, Rhino, Blender —
-              et obtenez en quelques secondes une image photoréaliste prête à présenter au client.
-            </p>
-
-            <div className="features-list reveal">
-              {[
-                ["✦", "Compatibilité universelle", "SketchUp, Revit, Rhino, Blender, ArchiCAD. Tous formats acceptés."],
-                ["◈", "Contrôle de l'ambiance", "Heure du jour, météo, saison, intérieur ou extérieur. Prompt simple."],
-                ["⬡", "Style architectural", "Brutalisme, minimalisme, contemporain, historique. L'IA adapte l'esthétique."],
-                ["◎", "Cohérence de marque", "Entraînez le modèle sur vos propres projets pour un style signature."],
-              ].map(([icon, name, desc]) => (
-                <div className="feature-item" key={name}>
-                  <div className="feature-icon">{icon}</div>
-                  <div>
-                    <div className="feature-name">{name}</div>
-                    <div className="feature-desc">{desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* SLIDER */}
-          <div className="slider-wrap reveal" ref={sliderRef}>
-            <div className="slider-before">
-              <div className="img-before">
-                <div className="wireframe" />
-                <div className="wireframe-shape ws1" />
-                <div className="wireframe-shape ws2" />
-                <div className="wireframe-shape ws3" />
-                <div className="wireframe-shape ws4" />
-                <div className="wireframe-shape ws5" />
-                <div className="ws-label">Rendu 3D — SketchUp</div>
+      <section
+        style={{
+          position: "relative",
+          zIndex: 2,
+          padding: "80px 40px",
+          borderTop: `1px solid ${COLORS.border}`,
+          borderBottom: `1px solid ${COLORS.border}`,
+          background: COLORS.surface,
+        }}
+      >
+        <div
+          className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-6xl mx-auto"
+        >
+          {[
+            ["4×", "Plus rapide"],
+            ["< 30s", "Par rendu"],
+            ["12+", "Intégrations"],
+            ["98%", "Satisfaction"],
+          ].map(([num, label], i) => (
+            <div
+              key={i}
+              data-reveal
+              style={{
+                textAlign: "center",
+                opacity: 0,
+                transform: "translateY(20px)",
+                transition: `opacity 0.7s ${i * 0.1}s, transform 0.7s ${i * 0.1}s`,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: fontSerif,
+                  fontSize: "clamp(40px, 5vw, 64px)",
+                  fontWeight: 400,
+                  color: COLORS.gold,
+                  lineHeight: 1,
+                }}
+              >
+                {num}
+              </div>
+              <div
+                style={{
+                  marginTop: 12,
+                  fontSize: 11,
+                  letterSpacing: "0.25em",
+                  textTransform: "uppercase",
+                  color: COLORS.ivoryDim,
+                }}
+              >
+                {label}
               </div>
             </div>
-            <div className="slider-after" ref={afterRef} style={{ clipPath: "inset(0 50% 0 0)" }}>
-              <div className="img-after">
-                <div className="photo-bg" />
-                <div className="sky-glow" />
-                <div className="building">
-                  {[
-                    [15, 10, 25, false], [15, 45, 25, true], [15, 70, 20, false],
-                    [32, 10, 25, true], [32, 45, 25, false], [32, 70, 20, true],
-                    [49, 10, 25, false], [49, 45, 25, true], [49, 70, 20, true],
-                    [66, 10, 25, false], [66, 45, 25, false], [66, 70, 20, true],
-                  ].map(([top, left, w, lit], i) => (
-                    <div
-                      key={i}
-                      className={`building-win${lit ? " light" : ""}`}
-                      style={{ top: `${top}%`, left: `${left}%`, width: `${w}%`, height: "12%" }}
-                    />
-                  ))}
-                </div>
-                <div className="reflection" />
-                <div className="ground" />
-                <div className="photo-label">FORMA Render AI</div>
-              </div>
-            </div>
-            <div className="slider-divider" ref={dividerRef}>
-              <div className="slider-handle">⟺</div>
-            </div>
-            <div className="slider-labels">
-              <span className="slider-label">Rendu 3D</span>
-              <span className="slider-label">Photoréaliste</span>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      <div className="sep-gold" />
+      {/* BENTO FEATURES */}
+      <section
+        id="render"
+        style={{ position: "relative", zIndex: 2, padding: "120px 24px", maxWidth: 1280, margin: "0 auto" }}
+      >
+        <div
+          data-reveal
+          style={{
+            opacity: 0,
+            transform: "translateY(20px)",
+            transition: "all 0.8s",
+            textAlign: "center",
+            marginBottom: 80,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              letterSpacing: "0.3em",
+              textTransform: "uppercase",
+              color: COLORS.gold,
+              marginBottom: 20,
+            }}
+          >
+            ◆ Une suite, pas un outil
+          </div>
+          <h2
+            style={{
+              fontFamily: fontSerif,
+              fontSize: "clamp(36px, 5.5vw, 72px)",
+              fontWeight: 300,
+              lineHeight: 1.05,
+              letterSpacing: "-0.02em",
+              maxWidth: 800,
+              margin: "0 auto",
+            }}
+          >
+            Tout ce dont votre <em style={{ color: COLORS.gold }}>cabinet</em> a besoin.
+          </h2>
+        </div>
 
-      {/* AGENT */}
-      <section id="agent" className="agent-section">
-        <div className="agent-inner">
-          <div className="reveal">
-            <div className="agent-ui">
-              <div className="agent-topbar">
-                <div className="agent-dot" style={{ background: "#ff5f56" }} />
-                <div className="agent-dot" style={{ background: "#ffbd2e" }} />
-                <div className="agent-dot" style={{ background: "#27c93f" }} />
-                <div className="agent-title-bar">FORMA Agent — Session active</div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Big card — Render */}
+          <BentoCard
+            className="md:col-span-2 md:row-span-2"
+            tag="Render AI"
+            title="Du wireframe au photoréalisme."
+            desc="Téléversez votre maquette 3D, choisissez une ambiance, et obtenez un rendu prêt-client en moins de 30 secondes."
+            icon={<ImageIcon size={20} />}
+            big
+          >
+            <div
+              style={{
+                marginTop: 32,
+                aspectRatio: "16/9",
+                borderRadius: 8,
+                overflow: "hidden",
+                position: "relative",
+                background: `linear-gradient(135deg, #1a1612 0%, #2a1f15 50%, #C4A26430 100%)`,
+                border: `1px solid ${COLORS.border}`,
+              }}
+            >
+              {/* Fake architectural rendering */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background:
+                    "radial-gradient(ellipse at top, rgba(196,162,100,0.4) 0%, transparent 60%)",
+                }}
+              />
+              {/* Building silhouette */}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "20%",
+                  left: "15%",
+                  right: "15%",
+                  height: "55%",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(8, 1fr)",
+                  gridTemplateRows: "repeat(6, 1fr)",
+                  gap: 4,
+                }}
+              >
+                {Array.from({ length: 48 }).map((_, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      background:
+                        Math.random() > 0.5
+                          ? "rgba(255, 220, 150, 0.7)"
+                          : "rgba(20, 18, 15, 0.9)",
+                      borderRadius: 1,
+                    }}
+                  />
+                ))}
               </div>
-              <div className="agent-body">
-                <div className="agent-msg">
-                  Résume les emails non lus de ce matin et priorise les demandes clients urgentes.
-                </div>
-                <div className="agent-msg ai">
-                  J'ai trouvé 8 emails. 2 prioritaires : M. Dubois (délai permis) et Cabinet Archi+ (révision plans). Je rédige les réponses ?
-                </div>
-                <div className="agent-msg">
-                  Oui, et planifie une réunion de suivi avec Archi+ cette semaine.
-                </div>
-                <div className="agent-msg ai">
-                  Réponses rédigées. Réunion proposée jeudi 14h avec lien visio. Dois-je envoyer ?
-                </div>
-                <div className="agent-msg">
-                  Parfait. Et vérifie les deadlines du projet Lyon.
-                </div>
-                <div className="agent-typing">
-                  <div className="typing-dot" />
-                  <div className="typing-dot" />
-                  <div className="typing-dot" />
-                </div>
-              </div>
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: "20%",
+                  background:
+                    "linear-gradient(to top, rgba(196,162,100,0.2), transparent)",
+                }}
+              />
             </div>
+          </BentoCard>
 
-            <div className="integrations reveal">
+          <BentoCard
+            tag="Agent"
+            title="Un assistant qui connaît votre cabinet."
+            desc="Mémoire long terme, accès aux projets et à l'équipe."
+            icon={<Bot size={20} />}
+          />
+
+          <BentoCard
+            tag="Studio"
+            title="Édition propre — Word & Excel."
+            desc="Documents et tableurs natifs, exports DOCX/XLSX/PDF."
+            icon={<Layers size={20} />}
+          />
+
+          <BentoCard
+            tag="Équipe"
+            title="Collaboration en temps réel."
+            desc="Invitez vos collaborateurs, assignez des rôles, suivez l'avancement."
+            icon={<Zap size={20} />}
+          />
+
+          <BentoCard
+            tag="Sécurité"
+            title="Vos données restent les vôtres."
+            desc="Chiffrement, RLS, hébergement européen."
+            icon={<Shield size={20} />}
+          />
+        </div>
+      </section>
+
+      {/* AGENT showcase */}
+      <section
+        id="agent"
+        style={{
+          position: "relative",
+          zIndex: 2,
+          padding: "120px 24px",
+          background: `linear-gradient(180deg, ${COLORS.bg} 0%, ${COLORS.surface} 50%, ${COLORS.bg} 100%)`,
+        }}
+      >
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
+          <div data-reveal style={{ opacity: 0, transform: "translateY(20px)", transition: "all 0.8s" }}>
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.3em",
+                textTransform: "uppercase",
+                color: COLORS.gold,
+                marginBottom: 20,
+              }}
+            >
+              ◇ Agent Conversationnel
+            </div>
+            <h2
+              style={{
+                fontFamily: fontSerif,
+                fontSize: "clamp(36px, 5vw, 64px)",
+                fontWeight: 300,
+                lineHeight: 1.05,
+                letterSpacing: "-0.02em",
+                marginBottom: 28,
+              }}
+            >
+              Votre bureau,<br />
+              <em style={{ color: COLORS.gold }}>orchestré.</em>
+            </h2>
+            <p style={{ color: COLORS.ivoryDim, fontSize: 17, lineHeight: 1.7, marginBottom: 32 }}>
+              Emails, plannings, devis, suivi de chantier. FORMA Agent apprend vos habitudes,
+              connaît vos projets et anticipe vos besoins.
+            </p>
+            <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 14 }}>
               {[
-                ["✉", "Gmail"],
-                ["📅", "Calendrier"],
-                ["📁", "Drive"],
-                ["💬", "Slack"],
-                ["📐", "Revit"],
-                ["🔲", "Notion"],
-              ].map(([icon, name]) => (
-                <div className="integration-item" key={name}>
-                  <span className="i-icon">{icon}</span>{name}
-                </div>
+                "Recherche web & veille réglementaire",
+                "Mémoire multi-projets & inter-équipe",
+                "Génération d'images, documents, tableurs",
+                "Mentions et notifications temps réel",
+              ].map((t) => (
+                <li key={t} style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 15 }}>
+                  <Check size={16} style={{ color: COLORS.gold, flexShrink: 0 }} />
+                  <span style={{ color: COLORS.ivory }}>{t}</span>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
 
-          <div>
-            <div className="section-tag reveal">Agent Généraliste</div>
-            <h2 className="section-title reveal">
-              Votre bureau,<br /><em>automatisé.</em>
-            </h2>
-            <p className="section-desc reveal">
-              FORMA Agent orchestre votre workflow administratif : emails, plannings,
-              devis, suivi de chantier. Il apprend vos habitudes et anticipe vos besoins.
-            </p>
-
-            <div className="capabilities reveal">
-              {[
-                ["Gestion emails & réponses automatiques", "live"],
-                ["Planification et gestion agenda", "live"],
-                ["Synthèse de réunions et comptes rendus", "live"],
-                ["Suivi d'avancement de chantier", "live"],
-                ["Génération de devis et factures", "soon"],
-                ["Veille réglementaire (PLU, normes RT)", "soon"],
-              ].map(([name, status]) => (
-                <div className="cap-item" key={name}>
-                  <span className="cap-name">{name}</span>
-                  <span className={`cap-status ${status}`}>
-                    {status === "live" ? "Disponible" : "Bientôt"}
-                  </span>
-                </div>
-              ))}
+          {/* Chat mock */}
+          <div
+            data-reveal
+            style={{
+              opacity: 0,
+              transform: "translateY(20px)",
+              transition: "all 0.8s 0.2s",
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: 12,
+              overflow: "hidden",
+              background: COLORS.surface,
+              boxShadow: `0 30px 80px -20px ${COLORS.gold}25`,
+            }}
+          >
+            <div
+              style={{
+                padding: "14px 18px",
+                borderBottom: `1px solid ${COLORS.border}`,
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <div style={{ width: 10, height: 10, borderRadius: 999, background: "#27c93f" }} />
+              <div
+                style={{
+                  fontSize: 11,
+                  letterSpacing: "0.2em",
+                  textTransform: "uppercase",
+                  color: COLORS.ivoryDim,
+                }}
+              >
+                FORMA Agent · Villa Méditerranéenne
+              </div>
+            </div>
+            <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+              <Bubble role="user">Résume les emails non lus et priorise les urgences clients.</Bubble>
+              <Bubble role="ai">
+                8 emails analysés. 2 prioritaires : <strong style={{ color: COLORS.gold }}>M. Dubois</strong> (délai
+                permis) et <strong style={{ color: COLORS.gold }}>Cabinet Archi+</strong> (révision plans). Je rédige ?
+              </Bubble>
+              <Bubble role="user">Oui, et planifie une réunion Archi+ jeudi.</Bubble>
+              <Bubble role="ai">
+                Réponses prêtes. Réunion jeudi 14h proposée. <em style={{ color: COLORS.gold }}>Mémorisé dans ce projet.</em>
+              </Bubble>
+              <div style={{ display: "flex", gap: 4, paddingTop: 4 }}>
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: 999,
+                      background: COLORS.gold,
+                      animation: `formaPulse 1.4s ${i * 0.2}s infinite`,
+                    }}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
+        <style>{`@keyframes formaPulse { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }`}</style>
       </section>
 
       {/* PRICING */}
-      <section id="pricing">
-        <div className="section-tag reveal" style={{ justifyContent: "center" }}>Tarifs</div>
-        <h2 className="section-title reveal" style={{ textAlign: "center", maxWidth: "none" }}>
-          Choisissez votre <em>formule.</em>
-        </h2>
-
-        <div className="pricing-grid reveal">
-          <div className="pricing-card">
-            <div className="pricing-tier">Studio</div>
-            <div className="pricing-price"><sup>€</sup>89<sub>/mois</sub></div>
-            <div className="pricing-divider" />
-            <ul className="pricing-features">
-              <li>30 rendus photoréalistes / mois</li>
-              <li>Agent email & agenda</li>
-              <li>3 intégrations</li>
-              <li>Résolution jusqu'à 2K</li>
-              <li className="inactive">Style signature personnalisé</li>
-              <li className="inactive">API access</li>
-            </ul>
-            <a href="#" className="pricing-cta">Commencer</a>
+      <section
+        id="pricing"
+        style={{ position: "relative", zIndex: 2, padding: "120px 24px", maxWidth: 1200, margin: "0 auto" }}
+      >
+        <div
+          data-reveal
+          style={{ opacity: 0, transform: "translateY(20px)", transition: "all 0.8s", textAlign: "center", marginBottom: 80 }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              letterSpacing: "0.3em",
+              textTransform: "uppercase",
+              color: COLORS.gold,
+              marginBottom: 20,
+            }}
+          >
+            ◈ Tarifs
           </div>
+          <h2
+            style={{
+              fontFamily: fontSerif,
+              fontSize: "clamp(36px, 5.5vw, 64px)",
+              fontWeight: 300,
+              lineHeight: 1.05,
+            }}
+          >
+            Choisissez votre <em style={{ color: COLORS.gold }}>formule.</em>
+          </h2>
+        </div>
 
-          <div className="pricing-card featured">
-            <div className="pricing-tier">Cabinet</div>
-            <div className="pricing-price"><sup>€</sup>249<sub>/mois</sub></div>
-            <div className="pricing-divider" />
-            <ul className="pricing-features">
-              <li>Rendus illimités</li>
-              <li>Agent complet (email, agenda, devis)</li>
-              <li>Intégrations illimitées</li>
-              <li>Résolution jusqu'à 8K</li>
-              <li>Style signature personnalisé</li>
-              <li className="inactive">API access</li>
-            </ul>
-            <a href="#" className="pricing-cta">Commencer</a>
-          </div>
-
-          <div className="pricing-card">
-            <div className="pricing-tier">Agence</div>
-            <div className="pricing-price" style={{ fontSize: 36, paddingTop: 10 }}>Sur mesure</div>
-            <div className="pricing-divider" />
-            <ul className="pricing-features">
-              <li>Volume illimité multi-utilisateurs</li>
-              <li>Agent complet + veille réglementaire</li>
-              <li>Intégrations sur-mesure</li>
-              <li>Résolution 8K + batch processing</li>
-              <li>Style signature & fine-tuning</li>
-              <li>API access & webhooks</li>
-            </ul>
-            <a href="#" className="pricing-cta">Nous contacter</a>
-          </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          {[
+            {
+              name: "Studio",
+              price: "89",
+              features: ["30 rendus / mois", "Agent illimité", "3 intégrations", "Résolution 2K", "1 utilisateur"],
+              featured: false,
+            },
+            {
+              name: "Cabinet",
+              price: "249",
+              features: [
+                "Rendus illimités",
+                "Agent + mémoire avancée",
+                "12 intégrations",
+                "Résolution 4K",
+                "Jusqu'à 10 collaborateurs",
+                "Support prioritaire",
+              ],
+              featured: true,
+            },
+            {
+              name: "Agence",
+              price: "Sur devis",
+              features: [
+                "Tout Cabinet, et plus",
+                "Style signature dédié",
+                "API & SSO",
+                "Hébergement dédié",
+                "Account manager",
+              ],
+              featured: false,
+            },
+          ].map((tier, i) => (
+            <div
+              key={tier.name}
+              data-reveal
+              style={{
+                opacity: 0,
+                transform: "translateY(20px)",
+                transition: `all 0.7s ${i * 0.1}s`,
+                position: "relative",
+                padding: 40,
+                border: `1px solid ${tier.featured ? COLORS.gold : COLORS.border}`,
+                background: tier.featured
+                  ? `linear-gradient(180deg, ${COLORS.goldSoft}, ${COLORS.surface})`
+                  : COLORS.surface,
+                borderRadius: 4,
+              }}
+            >
+              {tier.featured && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: -12,
+                    left: 40,
+                    background: COLORS.gold,
+                    color: COLORS.bg,
+                    fontSize: 10,
+                    letterSpacing: "0.2em",
+                    textTransform: "uppercase",
+                    padding: "5px 14px",
+                    fontWeight: 600,
+                  }}
+                >
+                  Recommandé
+                </div>
+              )}
+              <div
+                style={{
+                  fontSize: 11,
+                  letterSpacing: "0.3em",
+                  textTransform: "uppercase",
+                  color: COLORS.gold,
+                  marginBottom: 20,
+                }}
+              >
+                {tier.name}
+              </div>
+              <div
+                style={{
+                  fontFamily: fontSerif,
+                  fontSize: 56,
+                  fontWeight: 400,
+                  color: COLORS.ivory,
+                  lineHeight: 1,
+                  marginBottom: 4,
+                }}
+              >
+                {tier.price !== "Sur devis" && (
+                  <sup style={{ fontSize: 24, color: COLORS.ivoryDim, marginRight: 4 }}>€</sup>
+                )}
+                {tier.price}
+                {tier.price !== "Sur devis" && (
+                  <sub style={{ fontSize: 14, color: COLORS.ivoryDim, marginLeft: 6 }}>/mois</sub>
+                )}
+              </div>
+              <div style={{ height: 1, background: COLORS.border, margin: "28px 0" }} />
+              <ul style={{ listStyle: "none", padding: 0, marginBottom: 32, display: "flex", flexDirection: "column", gap: 12 }}>
+                {tier.features.map((f) => (
+                  <li key={f} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: COLORS.ivory }}>
+                    <Check size={14} style={{ color: COLORS.gold, flexShrink: 0 }} />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                to="/auth"
+                style={{
+                  display: "block",
+                  textAlign: "center",
+                  padding: "14px 24px",
+                  background: tier.featured ? COLORS.gold : "transparent",
+                  color: tier.featured ? COLORS.bg : COLORS.ivory,
+                  border: `1px solid ${tier.featured ? COLORS.gold : COLORS.border}`,
+                  fontSize: 12,
+                  letterSpacing: "0.2em",
+                  textTransform: "uppercase",
+                  textDecoration: "none",
+                  fontWeight: 500,
+                  transition: "all 0.3s",
+                }}
+                className={tier.featured ? "hover:!bg-[#D4B87A]" : "hover:!border-[#C4A264]"}
+              >
+                {tier.price === "Sur devis" ? "Nous contacter" : "Commencer"}
+              </Link>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* TESTIMONIAL */}
-      <div className="testimonial-section reveal">
-        <div className="sep-gold" style={{ marginBottom: 80 }} />
-        <p className="testimonial-quote">
-          "FORMA a transformé notre façon de présenter les projets. Les clients comprennent
-          immédiatement l'espace — et les décisions vont deux fois plus vite."
-        </p>
-        <div className="testimonial-attr">
-          <strong>Marie-Claire Fontaine</strong> — Associée, Fontaine & Beaumont Architectes
+      {/* CTA */}
+      <section
+        style={{
+          position: "relative",
+          zIndex: 2,
+          padding: "120px 24px",
+          textAlign: "center",
+          borderTop: `1px solid ${COLORS.border}`,
+        }}
+      >
+        <div data-reveal style={{ opacity: 0, transform: "translateY(20px)", transition: "all 0.8s" }}>
+          <h2
+            style={{
+              fontFamily: fontSerif,
+              fontSize: "clamp(40px, 6vw, 88px)",
+              fontWeight: 300,
+              lineHeight: 1.05,
+              letterSpacing: "-0.02em",
+              marginBottom: 32,
+            }}
+          >
+            Prêt à <em style={{ color: COLORS.gold }}>commencer ?</em>
+          </h2>
+          <p style={{ fontSize: 17, color: COLORS.ivoryDim, maxWidth: 540, margin: "0 auto 40px", lineHeight: 1.7 }}>
+            14 jours d'essai. Aucune carte requise. Conçu en France.
+          </p>
+          <Link
+            to="/auth"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "18px 40px",
+              background: COLORS.gold,
+              color: COLORS.bg,
+              fontSize: 13,
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+              textDecoration: "none",
+              transition: "all 0.3s",
+            }}
+            className="hover:!bg-[#D4B87A] hover:scale-[1.02]"
+          >
+            Créer mon studio <ArrowRight size={16} />
+          </Link>
         </div>
-        <div className="sep-gold" style={{ marginTop: 80 }} />
-      </div>
+      </section>
 
       {/* FOOTER */}
-      <footer className="forma-footer">
-        <div>
-          <div className="footer-brand">FORM<span>A</span></div>
-          <div className="footer-tagline">
-            Intelligence architecturale.<br />Conçu pour les esprits qui bâtissent.
-          </div>
+      <footer
+        style={{
+          position: "relative",
+          zIndex: 2,
+          padding: "40px",
+          borderTop: `1px solid ${COLORS.border}`,
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 20,
+          fontSize: 12,
+          color: COLORS.ivoryDim,
+        }}
+      >
+        <div style={{ fontFamily: fontSerif, letterSpacing: "0.4em", color: COLORS.ivory }}>
+          FORM<span style={{ color: COLORS.gold }}>A</span>
         </div>
-        <div className="footer-col">
-          <h4>Produit</h4>
-          <a href="#">Render AI</a>
-          <a href="#">Agent</a>
-          <a href="#">Intégrations</a>
-          <a href="#">Tarifs</a>
-          <a href="#">Roadmap</a>
-        </div>
-        <div className="footer-col">
-          <h4>Ressources</h4>
-          <a href="#">Documentation</a>
-          <a href="#">Galerie de rendus</a>
-          <a href="#">Blog</a>
-          <a href="#">Cas d'usage</a>
-          <a href="#">API</a>
-        </div>
-        <div className="footer-col">
-          <h4>Contact</h4>
-          <a href="#">hello@forma.ai</a>
-          <a href="#">LinkedIn</a>
-          <a href="#">Instagram</a>
-          <a href="#">Presse</a>
-          <a href="#">Careers</a>
-        </div>
+        <div>© {new Date().getFullYear()} FORMA. Conçu en France pour les architectes.</div>
       </footer>
-      <div className="footer-bottom">
-        <div className="footer-copy">© 2025 FORMA Technologies. Tous droits réservés.</div>
-        <div className="footer-legal">
-          <a href="#">Confidentialité</a>
-          <a href="#">CGU</a>
-          <a href="#">Cookies</a>
-        </div>
-      </div>
     </div>
   );
 };
+
+const BentoCard = ({
+  tag,
+  title,
+  desc,
+  icon,
+  big,
+  className,
+  children,
+}: {
+  tag: string;
+  title: string;
+  desc: string;
+  icon: React.ReactNode;
+  big?: boolean;
+  className?: string;
+  children?: React.ReactNode;
+}) => (
+  <div
+    data-reveal
+    className={className}
+    style={{
+      opacity: 0,
+      transform: "translateY(20px)",
+      transition: "all 0.8s",
+      padding: big ? 40 : 32,
+      border: `1px solid ${COLORS.border}`,
+      borderRadius: 8,
+      background: COLORS.surface,
+      transition: "border-color 0.3s, transform 0.3s",
+    }}
+    onMouseEnter={(e) => {
+      (e.currentTarget as HTMLElement).style.borderColor = COLORS.gold + "60";
+    }}
+    onMouseLeave={(e) => {
+      (e.currentTarget as HTMLElement).style.borderColor = COLORS.border;
+    }}
+  >
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        color: COLORS.gold,
+        marginBottom: 20,
+        fontSize: 11,
+        letterSpacing: "0.25em",
+        textTransform: "uppercase",
+      }}
+    >
+      {icon} {tag}
+    </div>
+    <h3
+      style={{
+        fontFamily: fontSerif,
+        fontSize: big ? "clamp(28px, 3vw, 40px)" : 22,
+        fontWeight: 400,
+        lineHeight: 1.15,
+        color: COLORS.ivory,
+        marginBottom: 14,
+        letterSpacing: "-0.01em",
+      }}
+    >
+      {title}
+    </h3>
+    <p style={{ fontSize: big ? 16 : 14, lineHeight: 1.6, color: COLORS.ivoryDim }}>{desc}</p>
+    {children}
+  </div>
+);
+
+const Bubble = ({ role, children }: { role: "user" | "ai"; children: React.ReactNode }) => (
+  <div
+    style={{
+      alignSelf: role === "user" ? "flex-end" : "flex-start",
+      maxWidth: "85%",
+      padding: "12px 16px",
+      borderRadius: 10,
+      background: role === "user" ? COLORS.goldSoft : "rgba(255,255,255,0.04)",
+      border: `1px solid ${role === "user" ? COLORS.gold + "40" : COLORS.border}`,
+      fontSize: 14,
+      lineHeight: 1.55,
+      color: COLORS.ivory,
+    }}
+  >
+    {children}
+  </div>
+);
 
 export default Index;
