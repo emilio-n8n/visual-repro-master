@@ -438,14 +438,14 @@ Deno.serve(async (req) => {
         try {
           const MAX_TURNS = 5;
           for (let turn = 0; turn < MAX_TURNS; turn++) {
-            const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            const aiResp = await fetch(`${AI_GATEWAY_URL}/chat/completions`, {
               method: "POST",
               headers: {
-                Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                Authorization: `Bearer ${AI_API_KEY}`,
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                model: "google/gemini-2.5-flash",
+                model: AI_MODEL,
                 messages: apiMessages,
                 tools,
                 stream: true,
