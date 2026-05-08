@@ -24,8 +24,10 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const ANON = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const AI_API_KEY = Deno.env.get("AI_API_KEY") ?? Deno.env.get("LOVABLE_API_KEY");
+    const AI_GATEWAY_URL = Deno.env.get("AI_GATEWAY_URL") ?? "https://ai.gateway.lovable.dev/v1";
+    const AI_IMAGE_MODEL = Deno.env.get("AI_IMAGE_MODEL") ?? "google/gemini-3.1-flash-image-preview";
+    if (!AI_API_KEY) throw new Error("AI_API_KEY (or LOVABLE_API_KEY) not configured");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
