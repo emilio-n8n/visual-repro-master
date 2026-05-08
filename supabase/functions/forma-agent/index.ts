@@ -419,8 +419,11 @@ Deno.serve(async (req) => {
       apiMessages.push(msg);
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
+    // Portable AI config — works with Lovable Gateway, OpenAI, or Gemini's OpenAI-compatible endpoint
+    const AI_API_KEY = Deno.env.get("AI_API_KEY") ?? Deno.env.get("LOVABLE_API_KEY");
+    const AI_GATEWAY_URL = Deno.env.get("AI_GATEWAY_URL") ?? "https://ai.gateway.lovable.dev/v1";
+    const AI_MODEL = Deno.env.get("AI_MODEL") ?? "google/gemini-2.5-flash";
+    if (!AI_API_KEY) throw new Error("AI_API_KEY (or LOVABLE_API_KEY) missing");
 
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
@@ -435,14 +438,14 @@ Deno.serve(async (req) => {
         try {
           const MAX_TURNS = 5;
           for (let turn = 0; turn < MAX_TURNS; turn++) {
-            const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            const aiResp = await fetch(`${AI_GATEWAY_URL}/chat/completions`, {
               method: "POST",
               headers: {
-                Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                Authorization: `Bearer ${AI_API_KEY}`,
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                model: "google/gemini-2.5-flash",
+                model: AI_MODEL,
                 messages: apiMessages,
                 tools,
                 stream: true,

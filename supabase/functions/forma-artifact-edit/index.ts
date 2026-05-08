@@ -40,14 +40,16 @@ ${selection ? `L'utilisateur a sélectionné une portion spécifique du document
 
     const userMsg = `Document actuel :\n\n${art.content}\n\n---\n${selection ? `PORTION SÉLECTIONNÉE:\n${selection}\n\n---\n` : ""}INSTRUCTION:\n${instruction}`;
 
-    const KEY = Deno.env.get("LOVABLE_API_KEY");
+    const KEY = Deno.env.get("AI_API_KEY") ?? Deno.env.get("LOVABLE_API_KEY");
+    const URL = Deno.env.get("AI_GATEWAY_URL") ?? "https://ai.gateway.lovable.dev/v1";
+    const MODEL = Deno.env.get("AI_MODEL") ?? "google/gemini-2.5-flash";
     if (!KEY) return json({ error: "AI key missing" }, 500);
 
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const r = await fetch(`${URL}/chat/completions`, {
       method: "POST",
       headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: MODEL,
         messages: [
           { role: "system", content: sys },
           { role: "user", content: userMsg },
