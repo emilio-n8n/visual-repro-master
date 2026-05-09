@@ -946,6 +946,112 @@ const BentoCard = ({
   </div>
 );
 
+const ToolCard = ({
+  number,
+  tag,
+  icon,
+  title,
+  what,
+  steps,
+  outputs,
+}: {
+  number: string;
+  tag: string;
+  icon: React.ReactNode;
+  title: string;
+  what: string;
+  steps: string[];
+  outputs: string;
+}) => (
+  <div
+    data-reveal
+    style={{
+      opacity: 0,
+      transform: "translateY(20px)",
+      transition: "opacity 0.8s, transform 0.8s, border-color 0.3s",
+      padding: 36,
+      border: `1px solid ${COLORS.border}`,
+      borderRadius: 8,
+      background: COLORS.surface,
+      display: "flex",
+      flexDirection: "column",
+      gap: 18,
+    }}
+    onMouseEnter={(e) => {
+      (e.currentTarget as HTMLElement).style.borderColor = COLORS.gold + "60";
+    }}
+    onMouseLeave={(e) => {
+      (e.currentTarget as HTMLElement).style.borderColor = COLORS.border;
+    }}
+  >
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          color: COLORS.gold,
+          fontSize: 11,
+          letterSpacing: "0.25em",
+          textTransform: "uppercase",
+        }}
+      >
+        {icon} {tag}
+      </div>
+      <span style={{ fontFamily: fontSerif, color: COLORS.gold, fontSize: 28, opacity: 0.4 }}>
+        {number}
+      </span>
+    </div>
+    <h3
+      style={{
+        fontFamily: fontSerif,
+        fontSize: 24,
+        fontWeight: 400,
+        lineHeight: 1.2,
+        color: COLORS.ivory,
+        letterSpacing: "-0.01em",
+      }}
+    >
+      {title}
+    </h3>
+    <p style={{ fontSize: 14, lineHeight: 1.6, color: COLORS.ivoryDim, fontStyle: "italic" }}>
+      {what}
+    </p>
+    <ol
+      style={{
+        listStyle: "none",
+        padding: 0,
+        margin: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        borderTop: `1px solid ${COLORS.border}`,
+        paddingTop: 18,
+      }}
+    >
+      {steps.map((s, i) => (
+        <li key={i} style={{ display: "flex", gap: 12, fontSize: 13.5, lineHeight: 1.5, color: COLORS.ivory }}>
+          <span style={{ color: COLORS.gold, fontFamily: fontSerif, minWidth: 16 }}>{i + 1}.</span>
+          <span>{s}</span>
+        </li>
+      ))}
+    </ol>
+    <div
+      style={{
+        marginTop: "auto",
+        paddingTop: 16,
+        fontSize: 10,
+        letterSpacing: "0.3em",
+        textTransform: "uppercase",
+        color: COLORS.gold,
+        opacity: 0.7,
+      }}
+    >
+      → {outputs}
+    </div>
+  </div>
+);
+
 const Bubble = ({ role, children }: { role: "user" | "ai"; children: React.ReactNode }) => (
   <div
     style={{
