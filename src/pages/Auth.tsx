@@ -23,6 +23,8 @@ const fontSans = "'DM Sans', system-ui, sans-serif";
 export default function AuthPage() {
   const navigate = useNavigate();
   const { session } = useAuth();
+  const joinToken = typeof window !== "undefined" ? localStorage.getItem("forma.joinToken") : null;
+  const afterAuthPath = joinToken ? `/join/${joinToken}` : "/dashboard";
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,8 +46,8 @@ export default function AuthPage() {
   }, [mode]);
 
   useEffect(() => {
-    if (session) navigate("/dashboard", { replace: true });
-  }, [session, navigate]);
+    if (session) navigate(afterAuthPath, { replace: true });
+  }, [session, navigate, afterAuthPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,8 +58,8 @@ export default function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
-            data: { full_name: fullName },
+            emailRedirectTo: `${window.location.origin}${afterAuthPath}`,
+            data: { full_name: fullName, invite_token: joinToken ?? undefined },
           },
         });
         if (error) throw error;
@@ -78,7 +80,8 @@ export default function AuthPage() {
   const handleGoogle = async () => {
     setLoading(true);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/dashboard`,
+      redirect_uri: `${window.location.origin}${afterAuthPath}`,
+      extraParams: joinToken ? { invite_token: joinToken } : undefined,
     });
     if (result.error) {
       toast.error("Connexion Google impossible");
