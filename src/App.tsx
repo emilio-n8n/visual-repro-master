@@ -62,6 +62,7 @@ const App = () => (
                 <Route path="agent" element={<Agent />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
+              <Route path="/admin" element={<Admin />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </WorkspaceProvider>
