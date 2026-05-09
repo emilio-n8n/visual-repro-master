@@ -455,102 +455,67 @@ const Index = () => {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Big card — Render */}
-          <BentoCard
-            className="md:col-span-2 md:row-span-2"
+        {/* Three primary tools — clearly explained */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+          <ToolCard
+            number="01"
             tag="Render AI"
-            title="Du wireframe au photoréalisme."
-            desc="Téléversez votre maquette 3D, choisissez une ambiance, et obtenez un rendu prêt-client en moins de 30 secondes."
             icon={<ImageIcon size={20} />}
-            big
-          >
-            <div
-              style={{
-                marginTop: 32,
-                aspectRatio: "16/9",
-                borderRadius: 8,
-                overflow: "hidden",
-                position: "relative",
-                background: `linear-gradient(135deg, #1a1612 0%, #2a1f15 50%, #C4A26430 100%)`,
-                border: `1px solid ${COLORS.border}`,
-              }}
-            >
-              {/* Fake architectural rendering */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background:
-                    "radial-gradient(ellipse at top, rgba(196,162,100,0.4) 0%, transparent 60%)",
-                }}
-              />
-              {/* Building silhouette */}
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: "20%",
-                  left: "15%",
-                  right: "15%",
-                  height: "55%",
-                  display: "grid",
-                  gridTemplateColumns: "repeat(8, 1fr)",
-                  gridTemplateRows: "repeat(6, 1fr)",
-                  gap: 4,
-                }}
-              >
-                {Array.from({ length: 48 }).map((_, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      background:
-                        Math.random() > 0.5
-                          ? "rgba(255, 220, 150, 0.7)"
-                          : "rgba(20, 18, 15, 0.9)",
-                      borderRadius: 1,
-                    }}
-                  />
-                ))}
-              </div>
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: "20%",
-                  background:
-                    "linear-gradient(to top, rgba(196,162,100,0.2), transparent)",
-                }}
-              />
-            </div>
-          </BentoCard>
-
-          <BentoCard
-            tag="Agent"
-            title="Un assistant qui connaît votre cabinet."
-            desc="Mémoire long terme, accès aux projets et à l'équipe."
+            title="Transformez vos maquettes 3D en rendus photoréalistes."
+            what="Un moteur de rendu IA qui remplace 3ds Max, V-Ray, Lumion."
+            steps={[
+              "Importez une capture SketchUp, Revit, Rhino ou Blender",
+              "Choisissez l'ambiance : jour, nuit, hiver, été, intérieur…",
+              "Récupérez un visuel client en moins de 30 secondes",
+            ]}
+            outputs="JPG · PNG · 4K"
+          />
+          <ToolCard
+            number="02"
+            tag="Agent IA"
             icon={<Bot size={20} />}
+            title="Un assistant qui connaît votre cabinet par cœur."
+            what="Un ChatGPT spécialisé architecture, branché à vos projets."
+            steps={[
+              "Pose-lui une question sur n'importe quel projet en cours",
+              "Il rédige emails, devis, comptes-rendus de chantier",
+              "Il mémorise — clients, contraintes, décisions, normes",
+            ]}
+            outputs="Texte · Recherche web · Mémoire"
           />
-
-          <BentoCard
+          <ToolCard
+            number="03"
             tag="Studio"
-            title="Édition propre — Word & Excel."
-            desc="Documents et tableurs natifs, exports DOCX/XLSX/PDF."
             icon={<Layers size={20} />}
+            title="Mini-éditeurs Word, Excel et PDF boostés à l'IA."
+            what="Génère et modifie vos livrables sans quitter FORMA."
+            steps={[
+              "L'agent crée un document, tableau ou présentation",
+              "Vous l'ouvrez dans un éditeur natif intégré",
+              "Vous éditez à la souris ou demandez une retouche IA",
+            ]}
+            outputs="DOCX · XLSX · PDF"
           />
+        </div>
 
+        {/* Secondary capabilities */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <BentoCard
             tag="Équipe"
-            title="Collaboration en temps réel."
-            desc="Invitez vos collaborateurs, assignez des rôles, suivez l'avancement."
+            title="Travaillez à plusieurs, en temps réel."
+            desc="Invitez associés, dessinateurs, assistants. Chacun son rôle, mentions et notifications instantanées."
             icon={<Zap size={20} />}
           />
-
+          <BentoCard
+            tag="Mémoire"
+            title="Ce que l'agent retient, vous le contrôlez."
+            desc="Outil remember() explicite — vous décidez ce qui entre dans la mémoire long terme du cabinet."
+            icon={<Sparkles size={20} />}
+          />
           <BentoCard
             tag="Sécurité"
             title="Vos données restent les vôtres."
-            desc="Chiffrement, RLS, hébergement européen."
+            desc="Chiffrement, accès par rôle, hébergement européen. Aucun entraînement sur vos projets."
             icon={<Shield size={20} />}
           />
         </div>
