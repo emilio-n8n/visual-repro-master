@@ -1,27 +1,27 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
+type ClaimInviteResult = { ok?: boolean; error?: string; workspace_id?: string };
+
 export default function Join() {
   const { token } = useParams();
   const { user, loading } = useAuth();
+  const { refresh } = useWorkspace();
   const navigate = useNavigate();
-  const [member, setMember] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!token) return;
-    supabase
-      .from("team_members")
-      .select("id, display_name, role_label, workspace_id, joined_user_id, status")
-      .eq("invite_token", token)
-      .maybeSingle()
-      .then(({ data }) => setMember(data));
-  }, [token]);
+    if (!token || loading || !user || busy) return;
+    accept();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, user?.id, loading]);
 
   if (loading) return <div className="min-h-screen bg-[#0b0b0b]" />;
 
@@ -50,10 +50,10 @@ export default function Join() {
     );
   }
 
-  if (!member) {
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0b0b0b] text-[#F0EAE0]/60">
-        Lien invalide ou expiré.
+        {error}
       </div>
     );
   }
@@ -64,13 +64,17 @@ export default function Join() {
     try {
       const { data, error } = await supabase.rpc("claim_team_invite", { _token: token });
       if (error) throw error;
-      const res = data as any;
+      const res = data as ClaimInviteResult | null;
       if (!res?.ok) throw new Error(res?.error ?? "invitation invalide");
       toast({ title: "Bienvenue dans l'équipe" });
       localStorage.removeItem("forma.joinToken");
+      await refresh();
       navigate("/dashboard");
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } catch (e) {
+      const rawMessage = e instanceof Error ? e.message : "Erreur inconnue";
+      const message = rawMessage === "invalid_token" ? "Lien invalide ou expiré." : rawMessage;
+      setError(message);
+      toast({ title: "Erreur", description: message, variant: "destructive" });
     } finally {
       setBusy(false);
     }
@@ -87,16 +91,16 @@ export default function Join() {
           Rejoindre le studio
         </h1>
         <p className="text-[#F0EAE0]/60 mb-2 text-sm">
-          Vous avez été invité·e en tant que <b>{member.role_label}</b>.
+          Votre compte est relié au cabinet existant. Aucun onboarding n'est nécessaire.
         </p>
-        <p className="text-[#F0EAE0]/40 mb-8 text-xs">({member.display_name})</p>
+        <p className="text-[#F0EAE0]/40 mb-8 text-xs">Redirection automatique…</p>
         <Button
           onClick={accept}
           disabled={busy}
           className="bg-[#C4A264] hover:bg-[#C4A264]/90 text-black"
         >
           {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-          Accepter et rejoindre
+          Rejoindre le cabinet
         </Button>
       </div>
     </div>
