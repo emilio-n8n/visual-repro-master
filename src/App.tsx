@@ -17,6 +17,7 @@ import Agent from "./pages/dashboard/Agent.tsx";
 import Settings from "./pages/dashboard/Settings.tsx";
 import Studio from "./pages/dashboard/Studio.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Admin from "./pages/Admin.tsx";
 
 const queryClient = new QueryClient();
 
