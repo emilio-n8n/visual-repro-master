@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -9,6 +10,7 @@ import { Loader2 } from "lucide-react";
 export default function Join() {
   const { token } = useParams();
   const { user, loading } = useAuth();
+  const { refresh } = useWorkspace();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -64,6 +66,7 @@ export default function Join() {
       if (!res?.ok) throw new Error(res?.error ?? "invitation invalide");
       toast({ title: "Bienvenue dans l'équipe" });
       localStorage.removeItem("forma.joinToken");
+      await refresh();
       navigate("/dashboard");
     } catch (e: any) {
       const message = e.message === "invalid_token" ? "Lien invalide ou expiré." : e.message;
