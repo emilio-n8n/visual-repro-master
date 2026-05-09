@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
+type ClaimInviteResult = { ok?: boolean; error?: string; workspace_id?: string };
+
 export default function Join() {
   const { token } = useParams();
   const { user, loading } = useAuth();
@@ -62,14 +64,15 @@ export default function Join() {
     try {
       const { data, error } = await supabase.rpc("claim_team_invite", { _token: token });
       if (error) throw error;
-      const res = data as any;
+      const res = data as ClaimInviteResult | null;
       if (!res?.ok) throw new Error(res?.error ?? "invitation invalide");
       toast({ title: "Bienvenue dans l'équipe" });
       localStorage.removeItem("forma.joinToken");
       await refresh();
       navigate("/dashboard");
-    } catch (e: any) {
-      const message = e.message === "invalid_token" ? "Lien invalide ou expiré." : e.message;
+    } catch (e) {
+      const rawMessage = e instanceof Error ? e.message : "Erreur inconnue";
+      const message = rawMessage === "invalid_token" ? "Lien invalide ou expiré." : rawMessage;
       setError(message);
       toast({ title: "Erreur", description: message, variant: "destructive" });
     } finally {
