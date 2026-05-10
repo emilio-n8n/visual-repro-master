@@ -32,21 +32,45 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   type Notification = { id: string; read_at: string | null; title: string };
   const [notifs, setNotifs] = useState<Notification[]>([]);
+  const [loadingNotifs, setLoadingNotifs] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
+    setLoadingNotifs(true);
+
+    // Initial fetch with proper cleanup
     supabase
       .from("notifications")
-      .select("*")
+      .select("id, read_at, title")
       .order("created_at", { ascending: false })
       .limit(20)
-      .then(({ data }) => setNotifs(data ?? []));
-  }, [user]);
+      .then(({ data, error }) => {
+        setLoadingNotifs(false);
+        if (!error && data) setNotifs(data);
+      });
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel("notifications")
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "notifications",
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        setNotifs((prev) => [payload.new as Notification, ...prev].slice(0, 20));
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const unread = notifs.filter((n) => !n.read_at).length;
 
   async function markAllRead() {
-    if (!user || unread === 0) return;
+    if (!user?.id || unread === 0) return;
     await supabase
       .from("notifications")
       .update({ read_at: new Date().toISOString() })
