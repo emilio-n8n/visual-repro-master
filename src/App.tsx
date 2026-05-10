@@ -29,6 +29,7 @@ const Render = lazy(() => import("./pages/dashboard/Render.tsx"));
 const Agent = lazy(() => import("./pages/dashboard/Agent.tsx"));
 const Settings = lazy(() => import("./pages/dashboard/Settings.tsx"));
 const Studio = lazy(() => import("./pages/dashboard/Studio.tsx"));
+const MiniArchi = lazy(() => import("./pages/dashboard/MiniArchi.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const Admin = lazy(() => import("./pages/Admin.tsx"));
 
@@ -142,6 +143,7 @@ const App = () => (
                                     <Route path="settings" element={<Settings />} />
                                   </Route>
                                   <Route path="/admin" element={<Admin />} />
+                                  <Route path="/archi" element={<MiniArchi />} />
                                   <Route path="*" element={<NotFound />} />
                                 </Routes>
                               </Suspense>

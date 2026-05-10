@@ -11,10 +11,12 @@ import {
   Bot,
   Settings,
   LogOut,
+  Home,
 } from "lucide-react";
 
 const navItems = [
   { to: "/dashboard", icon: Sparkles, label: "Vue d'ensemble", end: true },
+  { to: "/archi", icon: Home, label: "Mini Archi" },
   { to: "/dashboard/render", icon: ImageIcon, label: "Render AI" },
   { to: "/dashboard/agent", icon: Bot, label: "Agent IA" },
   { to: "/dashboard/settings", icon: Settings, label: "Paramètres" },
