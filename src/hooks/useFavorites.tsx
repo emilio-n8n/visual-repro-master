@@ -1,63 +1,106 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
 
 type FavoritesContextType = {
   favorites: string[];
-  addFavorite: (artifactId: string) => void;
-  removeFavorite: (artifactId: string) => void;
+  loading: boolean;
+  addFavorite: (artifactId: string) => Promise<void>;
+  removeFavorite: (artifactId: string) => Promise<void>;
   isFavorite: (artifactId: string) => boolean;
-  toggleFavorite: (artifactId: string) => void;
+  toggleFavorite: (artifactId: string) => Promise<void>;
 };
-
-const FAVORITES_KEY = "forma_favorites";
 
 const FavoritesContext = createContext<FavoritesContextType>({
   favorites: [],
-  addFavorite: () => {},
-  removeFavorite: () => {},
+  loading: true,
+  addFavorite: async () => {},
+  removeFavorite: async () => {},
   isFavorite: () => false,
-  toggleFavorite: () => {},
+  toggleFavorite: async () => {},
 });
 
 export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? "[]");
-    } catch {
-      return [];
-    }
-  });
+  const { user } = useAuth();
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Persist to localStorage
+  // Load favorites from Supabase
   useEffect(() => {
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
-  }, [favorites]);
+    if (!user) {
+      setFavorites([]);
+      setLoading(false);
+      return;
+    }
 
-  const addFavorite = useCallback((artifactId: string) => {
-    setFavorites((prev) => {
-      if (prev.includes(artifactId)) return prev;
-      return [...prev, artifactId];
+    const loadFavorites = async () => {
+      const { data, error } = await supabase
+        .from("favorites")
+        .select("artifact_id")
+        .eq("user_id", user.id);
+
+      if (!error && data) {
+        setFavorites(data.map((f) => f.artifact_id));
+      }
+      setLoading(false);
+    };
+
+    loadFavorites();
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel("favorites-changes")
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "favorites",
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        if (payload.eventType === "INSERT") {
+          setFavorites((prev) => [...prev, payload.new.artifact_id]);
+        } else if (payload.eventType === "DELETE") {
+          setFavorites((prev) => prev.filter((id) => id !== payload.old.artifact_id));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const addFavorite = useCallback(async (artifactId: string) => {
+    if (!user) return;
+    await supabase.from("favorites").insert({
+      user_id: user.id,
+      artifact_id: artifactId,
     });
-  }, []);
+  }, [user]);
 
-  const removeFavorite = useCallback((artifactId: string) => {
-    setFavorites((prev) => prev.filter((id) => id !== artifactId));
-  }, []);
+  const removeFavorite = useCallback(async (artifactId: string) => {
+    if (!user) return;
+    await supabase
+      .from("favorites")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("artifact_id", artifactId);
+  }, [user]);
 
   const isFavorite = useCallback((artifactId: string) => {
     return favorites.includes(artifactId);
   }, [favorites]);
 
-  const toggleFavorite = useCallback((artifactId: string) => {
-    if (favorites.includes(artifactId)) {
-      removeFavorite(artifactId);
+  const toggleFavorite = useCallback(async (artifactId: string) => {
+    if (isFavorite(artifactId)) {
+      await removeFavorite(artifactId);
     } else {
-      addFavorite(artifactId);
+      await addFavorite(artifactId);
     }
-  }, [favorites, addFavorite, removeFavorite]);
+  }, [isFavorite, addFavorite, removeFavorite]);
 
   return (
     <FavoritesContext.Provider
-      value={{ favorites, addFavorite, removeFavorite, isFavorite, toggleFavorite }}
+      value={{ favorites, loading, addFavorite, removeFavorite, isFavorite, toggleFavorite }}
     >
       {children}
     </FavoritesContext.Provider>

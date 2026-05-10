@@ -1,43 +1,28 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
 
 type AnalyticsEvent = {
   name: string;
   properties?: Record<string, unknown>;
 };
 
-const ANALYTICS_QUEUE_KEY = "forma_analytics_queue";
-
 export function useAnalytics() {
-  const queueRef = useRef<AnalyticsEvent[]>([]);
+  const { user } = useAuth();
 
-  // Flush queue on mount
-  useEffect(() => {
+  const track = useCallback(async (name: string, properties?: Record<string, unknown>) => {
+    if (!user) return;
+
     try {
-      const saved = localStorage.getItem(ANALYTICS_QUEUE_KEY);
-      if (saved) {
-        queueRef.current = JSON.parse(saved);
-        localStorage.removeItem(ANALYTICS_QUEUE_KEY);
-        // In production, send to analytics service
-        if (queueRef.current.length > 0) {
-          console.log("[Analytics] Flushing queued events:", queueRef.current);
-        }
-      }
-    } catch { /* ignore */ }
-  }, []);
-
-  const track = useCallback((name: string, properties?: Record<string, unknown>) => {
-    const event = { name, properties, timestamp: new Date().toISOString() };
-
-    // Always queue first in case analytics is down
-    queueRef.current.push(event);
-    try {
-      localStorage.setItem(ANALYTICS_QUEUE_KEY, JSON.stringify(queueRef.current));
-    } catch { /* quota exceeded */ }
-
-    // In production: send to analytics service
-    // For now, just log
-    console.log("[Analytics]", event);
-  }, []);
+      await supabase.from("analytics").insert({
+        user_id: user.id,
+        event_type: name,
+        event_data: properties ?? {},
+      });
+    } catch (error) {
+      console.error("[Analytics] Failed to track event:", error);
+    }
+  }, [user]);
 
   const trackPageView = useCallback((page: string) => {
     track("page_view", { page });
@@ -51,5 +36,13 @@ export function useAnalytics() {
     track("error", { error, details });
   }, [track]);
 
-  return { track, trackPageView, trackButtonClick, trackError };
+  const trackArtifactCreated = useCallback((type: string, title: string) => {
+    track("artifact_created", { type, title });
+  }, [track]);
+
+  const trackExport = useCallback((format: string, artifactType: string) => {
+    track("export", { format, artifact_type: artifactType });
+  }, [track]);
+
+  return { track, trackPageView, trackButtonClick, trackError, trackArtifactCreated, trackExport };
 }
