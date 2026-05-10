@@ -26,6 +26,17 @@ FORMAT DE RÉPONSE STRICT - JSON seul, pas de markdown:
 }
 \`\`\`
 
+EXEMPLES DE STYLES ARCHITECTURAUX (utilise ces noms ou invente des variantes cohérentes):
+
+1. **Plan Ouvert** - Open space salon/cuisine, circulation fluide, minimum de couloirs
+2. **Plan Classique** - Séparation traditionnelle avec couloir central, pièces distinctes
+3. **Plan en L** - Aile jour/aile nuit en L, souvent avec patio ou terrasse
+4. **Plan Circulaire** - Circulation autour d'un nucleus central (escalier, cuisine)
+5. **Plan Biologique** - Formes organiques, murs arrondis, lumière naturelle maximale
+6. **Plan Compact** - Optimisation maximale, tous les m² utilisés, fonction密集
+7. **Plan Duplex** - Deux niveaux intégrés, escalier visible
+8. **Plan Panoramique** - Grande baie vitrée, vue extérieure privilégiée
+
 RÈGLES SVG TRÈS IMPORTANTES:
 1. viewBox="0 0 100 100" OBLIGATOIRE
 2. Utilise ces couleurs précises:
@@ -33,7 +44,7 @@ RÈGLES SVG TRÈS IMPORTANTES:
    - Sol: #2a2a2a (gris foncé)
    - Texte: #F0EAE0 (ivoire)
 3. Chaque pièce doit avoir un label texte lisible
-4.-style deSVG:minimaliste, architectural, propre
+4. Style SVG: minimaliste, architectural, propre
 5. Pas de gradients, pas d'images, que des formes géométriques simples
 6. Utilise rect, line, circle, text uniquement
 
@@ -128,7 +139,7 @@ IMPORTANT: Renvoie uniquement du JSON valide avec un array "plans" contenant 6 o
           { role: "system", content: ARCHI_SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.9,
+        temperature: 0.7,
         max_tokens: 4000,
       }),
     });
