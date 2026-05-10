@@ -120,6 +120,29 @@ Les nouveaux providers ont été ajoutés à l'arbre React :
 
 ---
 
+## 9. Améliorations pour la Commercialisation
+
+### SEO & Performance
+- `public/manifest.json` — Manifest PWA pour installation mobile
+- `public/sitemap.xml` — sitemap pour les moteurs de recherche
+- `index.html` — Ajout de:
+  - Canonical URL
+  - JSON-LD Structured Data (Schema.org)
+  - Preconnect pour Google Fonts
+  - Theme color pour mobile
+  - Apple touch icon
+
+### Robustesse & Error Handling
+- `src/components/ErrorBoundary.tsx` — Error boundaries réutilisables
+- `src/components/Skeleton.tsx` — Composants de chargement skeleton
+- `src/lib/api-utils.ts` — Utilitaires pour gestion d'erreurs API
+- `src/components/OfflineIndicator.tsx` — Amélioré avec feedback de reconnexion
+
+### UI/UX
+- `App.tsx` — PageLoader amélioré avec spinner moderne
+
+---
+
 ## Stack Actuelle
 
 - Frontend: React 18 + Vite + TypeScript + Tailwind + shadcn/ui

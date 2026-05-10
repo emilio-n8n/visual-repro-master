@@ -69,11 +69,13 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-// Loading fallback
+// Loading fallback with skeleton
 function PageLoader() {
   return (
-    <div className="min-h-screen bg-[#0b0b0b] flex items-center justify-center text-[#F0EAE0]/60">
-      <div className="animate-pulse">Chargement...</div>
+    <div className="min-h-screen bg-[#0b0b0b] flex flex-col items-center justify-center text-[#F0EAE0]/60">
+      <div className="w-12 h-12 border-4 border-[#C4A264]/20 border-t-[#C4A264] rounded-full animate-spin mb-4" />
+      <div className="text-sm tracking-wider">Chargement...</div>
+      <div className="mt-2 text-xs text-[#F0EAE0]/30">FORMA</div>
     </div>
   );
 }

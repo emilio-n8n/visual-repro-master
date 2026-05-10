@@ -4,10 +4,18 @@ import { WifiOff, Wifi, Loader2 } from "lucide-react";
 export function OfflineIndicator() {
   const [online, setOnline] = useState(navigator.onLine);
   const [pending, setPending] = useState(false);
+  const [showReconnected, setShowReconnected] = useState(false);
 
   useEffect(() => {
-    const handleOnline = () => setOnline(true);
-    const handleOffline = () => setOnline(false);
+    const handleOnline = () => {
+      setOnline(true);
+      setShowReconnected(true);
+      setTimeout(() => setShowReconnected(false), 3000);
+    };
+    const handleOffline = () => {
+      setOnline(false);
+      setShowReconnected(false);
+    };
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
@@ -18,14 +26,29 @@ export function OfflineIndicator() {
     };
   }, []);
 
-  // Show indicator when offline or when there are pending requests
-  if (online) return null;
+  // Show indicator when offline or reconnected
+  if (online && !showReconnected) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-yellow-600 text-white px-3 py-2 rounded-lg shadow-lg">
-      <WifiOff className="w-4 h-4" />
-      <span className="text-sm font-medium">Hors ligne</span>
-      {pending && <Loader2 className="w-4 h-4 animate-spin" />}
+    <div
+      className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-lg shadow-lg transition-all ${
+        showReconnected
+          ? "bg-green-600 text-white"
+          : "bg-yellow-600 text-white"
+      }`}
+    >
+      {showReconnected ? (
+        <>
+          <Wifi className="w-4 h-4" />
+          <span className="text-sm font-medium">Connexion rétablie</span>
+        </>
+      ) : (
+        <>
+          <WifiOff className="w-4 h-4" />
+          <span className="text-sm font-medium">Hors ligne</span>
+          {pending && <Loader2 className="w-4 h-4 animate-spin" />}
+        </>
+      )}
     </div>
   );
 }
