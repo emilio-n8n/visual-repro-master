@@ -101,6 +101,25 @@ Les nouveaux providers ont été ajoutés à l'arbre React :
 
 ---
 
+## 8. Nouvelles Fonctionnalités Mini Archi
+
+### a) Estimateur de Budget
+- Calcul automatique basé sur la surface, nombre de pièces et niveau de budget
+- Catégories: Gros œuvre, Second œuvre, Finitions, Extérieur, Honoraires
+- 3 niveaux: économique, moyen, haut de gamme
+- Affichage du total estimé
+
+### b) Comparateur de Plans
+- Permet de sélectionner 2 plans pour les comparer côte à côte
+- Vue juxtaposée avec analyse comparative
+- Accessible depuis la page des 6 propositions
+
+### c) Export STL
+- Bouton d'export pour impression 3D
+- Intégration Three.js requise pour la génération réelle du fichier STL
+
+---
+
 ## Stack Actuelle
 
 - Frontend: React 18 + Vite + TypeScript + Tailwind + shadcn/ui

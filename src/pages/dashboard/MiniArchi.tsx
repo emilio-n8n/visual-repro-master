@@ -1,12 +1,24 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Loader2, Sparkles, Home, Box, LayoutGrid, ChevronRight, Check } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  Sparkles,
+  Home,
+  Box,
+  ChevronRight,
+  Check,
+  DollarSign,
+  GitCompare,
+  Download,
+  RotateCw,
+} from "lucide-react";
 
 type FloorPlan = {
   id: string;
@@ -16,17 +28,27 @@ type FloorPlan = {
   selected: boolean;
 };
 
+type BudgetEstimate = {
+  category: string;
+  min: number;
+  max: number;
+  items: string[];
+};
+
 export default function MiniArchi() {
   const { workspace } = useWorkspace();
   const navigate = useNavigate();
-  const [step, setStep] = useState<"constraints" | "generating" | "plans" | "3d">("constraints");
+  const [step, setStep] = useState<"constraints" | "generating" | "plans" | "compare" | "budget" | "3d">("constraints");
   const [constraints, setConstraints] = useState("");
   const [surface, setSurface] = useState("");
   const [rooms, setRooms] = useState("");
   const [budget, setBudget] = useState("");
+  const [budgetLevel, setBudgetLevel] = useState<"economique" | "moyen" | "haut">("moyen");
   const [plans, setPlans] = useState<FloorPlan[]>([]);
   const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
+  const [comparePlans, setComparePlans] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isRotating, setIsRotating] = useState(false);
 
   const generatePlans = async () => {
     if (!constraints.trim()) return;
@@ -57,7 +79,6 @@ export default function MiniArchi() {
         setPlans(data.plans || []);
         setStep("plans");
       } else {
-        // Fallback: generate mock plans if function doesn't exist yet
         const mockPlans: FloorPlan[] = [
           { id: "1", title: "Plan Ouvert", description: "Space ouvert avec cuisine ouverte sur salon", svg: generateMockSvg("open"), selected: false },
           { id: "2", title: "Plan Classique", description: "Séparation traditionnelle salon/salle à manger", svg: generateMockSvg("classic"), selected: false },
@@ -71,7 +92,6 @@ export default function MiniArchi() {
       }
     } catch (error) {
       console.error("Error generating plans:", error);
-      // Generate mock plans as fallback
       const mockPlans: FloorPlan[] = [
         { id: "1", title: "Plan Ouvert", description: "Space ouvert avec cuisine ouverte sur salon", svg: generateMockSvg("open"), selected: false },
         { id: "2", title: "Plan Classique", description: "Séparation traditionnelle salon/salle à manger", svg: generateMockSvg("classic"), selected: false },
@@ -95,8 +115,77 @@ export default function MiniArchi() {
     );
   };
 
+  const toggleCompareSelection = (planId: string) => {
+    setComparePlans((prev) => {
+      if (prev.includes(planId)) {
+        return prev.filter((id) => id !== planId);
+      }
+      if (prev.length >= 2) {
+        return [prev[1], planId];
+      }
+      return [...prev, planId];
+    });
+  };
+
   const generate3D = () => {
     setStep("3d");
+  };
+
+  const goToCompare = () => {
+    setComparePlans(selectedPlans.slice(0, 2));
+    setStep("compare");
+  };
+
+  const goToBudget = () => {
+    setStep("budget");
+  };
+
+  const exportSTL = () => {
+    alert("Export STL: Cette fonctionnalité génère un fichier STL pour impression 3D.\n\nIntégration Three.js requise pour l'export réel.");
+  };
+
+  // Calculate budget estimate
+  const calculateBudget = (): BudgetEstimate[] => {
+    const surfaceNum = parseInt(surface) || 150;
+    const roomCount = parseInt(rooms) || 4;
+    const multiplier = budgetLevel === "economique" ? 0.7 : budgetLevel === "haut" ? 1.5 : 1;
+
+    return [
+      {
+        category: "Gros œuvre",
+        min: surfaceNum * 800 * multiplier,
+        max: surfaceNum * 1200 * multiplier,
+        items: ["Fondations", "Structure", "Murs", "Toiture", "Étanchéité"],
+      },
+      {
+        category: "Second œuvre",
+        min: surfaceNum * 600 * multiplier,
+        max: surfaceNum * 900 * multiplier,
+        items: ["Plomberie", "Électricité", "Chauffage", "Isolation", "Plâtres"],
+      },
+      {
+        category: "Finitions",
+        min: surfaceNum * 400 * multiplier,
+        max: surfaceNum * 700 * multiplier,
+        items: ["Peintures", "Sols", "Menuiseries", "Équipements salle de bain", "Cuisine"],
+      },
+      {
+        category: "Extérieur",
+        min: surfaceNum * 200 * multiplier,
+        max: surfaceNum * 400 * multiplier,
+        items: ["Terrasse", "Jardin", "Clôture", "Allées", "Raccordements"],
+      },
+      {
+        category: "Honoraires",
+        min: surfaceNum * 150 * multiplier,
+        max: surfaceNum * 250 * multiplier,
+        items: ["Architecte", "Bureau d'études", "Contrôle technique", "Assurance"],
+      },
+    ];
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(price);
   };
 
   if (step === "constraints") {
@@ -115,10 +204,7 @@ export default function MiniArchi() {
             <Home className="w-8 h-8 text-[#C4A264]" />
             <span className="text-xs tracking-[0.3em] text-[#C4A264] uppercase">Mini Archi</span>
           </div>
-          <h1
-            className="text-4xl mb-2"
-            style={{ fontFamily: "'Cormorant Garamond', serif" }}
-          >
+          <h1 className="text-4xl mb-2" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
             Créez votre maison
           </h1>
           <p className="text-[#F0EAE0]/60 mb-8">
@@ -219,21 +305,32 @@ export default function MiniArchi() {
               <ArrowLeft className="w-4 h-4" />
               Modifier les contraintes
             </button>
-            <h1
-              className="text-3xl"
-              style={{ fontFamily: "'Cormorant Garamond', serif" }}
-            >
+            <h1 className="text-3xl" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
               6 propositions
             </h1>
             <p className="text-[#F0EAE0]/50">Cliquez sur ceux que vous voulez développer en 3D</p>
           </div>
-          {selectedPlans.length > 0 && (
-            <Button onClick={generate3D} className="bg-[#C4A264] text-black">
-              <Box className="w-5 h-5 mr-2" />
-              Développer en 3D ({selectedPlans.length})
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-          )}
+          <div className="flex gap-3">
+            {selectedPlans.length === 2 && (
+              <Button onClick={goToCompare} variant="outline" className="border-[#C4A264]/30 text-[#C4A264] hover:bg-[#C4A264]/10">
+                <GitCompare className="w-5 h-5 mr-2" />
+                Comparer
+              </Button>
+            )}
+            {selectedPlans.length > 0 && (
+              <>
+                <Button onClick={goToBudget} variant="outline" className="border-[#C4A264]/30 text-[#C4A264] hover:bg-[#C4A264]/10">
+                  <DollarSign className="w-5 h-5 mr-2" />
+                  Estimer budget
+                </Button>
+                <Button onClick={generate3D} className="bg-[#C4A264] text-black">
+                  <Box className="w-5 h-5 mr-2" />
+                  Développer en 3D ({selectedPlans.length})
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-6">
@@ -246,10 +343,7 @@ export default function MiniArchi() {
               }`}
             >
               <div className="aspect-square bg-[#0a0a0a] p-4 flex items-center justify-center relative">
-                <div
-                  className="w-full h-full"
-                  dangerouslySetInnerHTML={{ __html: plan.svg }}
-                />
+                <div className="w-full h-full" dangerouslySetInnerHTML={{ __html: plan.svg }} />
                 {selectedPlans.includes(plan.id) && (
                   <div className="absolute top-2 right-2 w-6 h-6 bg-[#C4A264] rounded-full flex items-center justify-center">
                     <Check className="w-4 h-4 text-black" />
@@ -267,6 +361,202 @@ export default function MiniArchi() {
     );
   }
 
+  if (step === "compare") {
+    const plan1 = plans.find((p) => p.id === comparePlans[0]);
+    const plan2 = plans.find((p) => p.id === comparePlans[1]);
+
+    return (
+      <div className="min-h-screen bg-[#0b0b0b] text-[#F0EAE0] p-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <button
+              onClick={() => setStep("plans")}
+              className="flex items-center gap-2 text-[#F0EAE0]/60 hover:text-[#F0EAE0] mb-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Retour aux plans
+            </button>
+            <h1 className="text-3xl" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+              Comparateur de plans
+            </h1>
+            <p className="text-[#F0EAE0]/50">Comparez 2 plans côte à côte</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-8">
+          <Card className="bg-[#1a1a1a] border-[#C4A264]/20">
+            <div className="p-4 border-b border-[#C4A264]/15">
+              <h3 className="font-medium text-[#C4A264]">{plan1?.title}</h3>
+              <p className="text-sm text-[#F0EAE0]/50">{plan1?.description}</p>
+            </div>
+            <div className="aspect-square bg-[#0a0a0a] p-4">
+              <div className="w-full h-full" dangerouslySetInnerHTML={{ __html: plan1?.svg || "" }} />
+            </div>
+            <CardContent className="p-4">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-[#F0EAE0]/50">Surface</span>
+                  <span>{surface || "150m²"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#F0EAE0]/50">Type</span>
+                  <span>Plan {plan1?.title}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#1a1a1a] border-[#C4A264]/20">
+            <div className="p-4 border-b border-[#C4A264]/15">
+              <h3 className="font-medium text-[#C4A264]">{plan2?.title}</h3>
+              <p className="text-sm text-[#F0EAE0]/50">{plan2?.description}</p>
+            </div>
+            <div className="aspect-square bg-[#0a0a0a] p-4">
+              <div className="w-full h-full" dangerouslySetInnerHTML={{ __html: plan2?.svg || "" }} />
+            </div>
+            <CardContent className="p-4">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-[#F0EAE0]/50">Surface</span>
+                  <span>{surface || "150m²"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#F0EAE0]/50">Type</span>
+                  <span>Plan {plan2?.title}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mt-8 p-6 bg-[#1a1a1a] rounded-lg border border-[#C4A264]/20">
+          <h3 className="text-lg font-medium text-[#C4A264] mb-4">Analyse comparative</h3>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <h4 className="text-[#F0EAE0]/70 mb-2">{plan1?.title}</h4>
+              <ul className="text-sm text-[#F0EAE0]/50 space-y-1">
+                <li>• Configuration {plan1?.title?.includes("Ouvert") ? "ouverte" : "classique"}</li>
+                <li>• Circulation {"centrale"}</li>
+                <li>•xspaces {"multiples"}</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-[#F0EAE0]/70 mb-2">{plan2?.title}</h4>
+              <ul className="text-sm text-[#F0EAE0]/50 space-y-1">
+                <li>• Configuration {plan2?.title?.includes("Ouvert") ? "ouverte" : "séparée"}</li>
+                <li>• Circulation {"optimisée"}</li>
+                <li>•xspaces {"adaptés"}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 flex gap-4">
+          <Button onClick={() => { setSelectedPlans(comparePlans); setStep("3d"); }} className="bg-[#C4A264] text-black">
+            <Box className="w-5 h-5 mr-2" />
+            Développer en 3D
+          </Button>
+          <Button onClick={() => setStep("budget")} variant="outline" className="border-[#C4A264]/30 text-[#C4A264] hover:bg-[#C4A264]/10">
+            <DollarSign className="w-5 h-5 mr-2" />
+            Estimer le budget
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "budget") {
+    const budgetEstimates = calculateBudget();
+    const totalMin = budgetEstimates.reduce((sum, cat) => sum + cat.min, 0);
+    const totalMax = budgetEstimates.reduce((sum, cat) => sum + cat.max, 0);
+
+    return (
+      <div className="min-h-screen bg-[#0b0b0b] text-[#F0EAE0] p-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <button
+              onClick={() => setStep("plans")}
+              className="flex items-center gap-2 text-[#F0EAE0]/60 hover:text-[#F0EAE0] mb-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Retour aux plans
+            </button>
+            <h1 className="text-3xl" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+              Estimation budgétaire
+            </h1>
+            <p className="text-[#F0EAE0]/50">Budget estimé pour {surface || "150m²"}</p>
+          </div>
+        </div>
+
+        <div className="max-w-3xl mx-auto">
+          <div className="mb-8 p-6 bg-[#1a1a1a] rounded-lg border border-[#C4A264]/20">
+            <h3 className="text-sm text-[#C4A264] uppercase tracking-[0.2em] mb-4">Niveau de budget</h3>
+            <div className="flex gap-4">
+              {(["economique", "moyen", "haut"] as const).map((level) => (
+                <button
+                  key={level}
+                  onClick={() => setBudgetLevel(level)}
+                  className={`flex-1 p-4 rounded-lg border transition-all ${
+                    budgetLevel === level
+                      ? "border-[#C4A264] bg-[#C4A264]/10"
+                      : "border-[#C4A264]/20 hover:border-[#C4A264]/50"
+                  }`}
+                >
+                  <span className="block text-center capitalize">{level}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {budgetEstimates.map((category, index) => (
+              <div key={index} className="p-4 bg-[#1a1a1a] rounded-lg border border-[#C4A264]/20">
+                <div className="flex justify-between items-center mb-3">
+                  <h4 className="text-[#C4A264] font-medium">{category.category}</h4>
+                  <span className="text-[#F0EAE0]">
+                    {formatPrice(category.min)} - {formatPrice(category.max)}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {category.items.map((item, i) => (
+                    <span key={i} className="text-xs text-[#F0EAE0]/50 bg-[#0a0a0a] px-2 py-1 rounded">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8 p-6 bg-[#C4A264]/10 rounded-lg border border-[#C4A264]">
+            <div className="flex justify-between items-center">
+              <span className="text-lg text-[#C4A264]">Budget total estimé</span>
+              <span className="text-2xl font-bold text-[#C4A264]">
+                {formatPrice(totalMin)} - {formatPrice(totalMax)}
+              </span>
+            </div>
+            <p className="text-sm text-[#F0EAE0]/50 mt-2">
+              *Estimation basée sur une construction стандартнт. Comprend tous frais.
+            </p>
+          </div>
+
+          <div className="mt-6 flex gap-4">
+            <Button onClick={() => setStep("3d")} className="bg-[#C4A264] text-black">
+              <Box className="w-5 h-5 mr-2" />
+              Passer à la vue 3D
+            </Button>
+            {selectedPlans.length === 2 && (
+              <Button onClick={goToCompare} variant="outline" className="border-[#C4A264]/30 text-[#C4A264] hover:bg-[#C4A264]/10">
+                <GitCompare className="w-5 h-5 mr-2" />
+                Comparer les plans
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (step === "3d") {
     return (
       <div className="min-h-screen bg-[#0b0b0b] text-[#F0EAE0] p-8">
@@ -279,13 +569,16 @@ export default function MiniArchi() {
               <ArrowLeft className="w-4 h-4" />
               Retour aux plans
             </button>
-            <h1
-              className="text-3xl"
-              style={{ fontFamily: "'Cormorant Garamond', serif" }}
-            >
+            <h1 className="text-3xl" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
               Vue 3D
             </h1>
             <p className="text-[#F0EAE0]/50">{selectedPlans.length} plans sélectionnés</p>
+          </div>
+          <div className="flex gap-3">
+            <Button onClick={exportSTL} variant="outline" className="border-[#C4A264]/30 text-[#C4A264] hover:bg-[#C4A264]/10">
+              <Download className="w-5 h-5 mr-2" />
+              Export STL
+            </Button>
           </div>
         </div>
 
@@ -294,14 +587,35 @@ export default function MiniArchi() {
             const plan = plans.find((p) => p.id === planId);
             return (
               <div key={planId} className="bg-[#1a1a1a] rounded-lg border border-[#C4A264]/20 overflow-hidden">
-                <div className="p-4 border-b border-[#C4A264]/15">
+                <div className="p-4 border-b border-[#C4A264]/15 flex justify-between items-center">
                   <h3 className="font-medium text-[#C4A264]">{plan?.title}</h3>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsRotating(!isRotating)}
+                      className="text-[#F0EAE0]/50 hover:text-[#F0EAE0]"
+                    >
+                      <RotateCw className={`w-4 h-4 ${isRotating ? "animate-spin" : ""}`} />
+                    </Button>
+                  </div>
                 </div>
-                <div className="aspect-video bg-[#0a0a0a] flex items-center justify-center">
-                  <div className="text-center">
+                <div className="aspect-video bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden">
+                  <div className={`text-center transition-transform duration-1000 ${isRotating ? "rotate-360" : ""}`}>
                     <Box className="w-16 h-16 text-[#C4A264]/30 mx-auto mb-4" />
                     <p className="text-[#F0EAE0]/40">Rendu 3D en cours...</p>
                     <p className="text-xs text-[#F0EAE0]/30 mt-2">Intégration Three.js à venir</p>
+                  </div>
+                  <div className="absolute bottom-4 left-4 right-4 flex justify-center gap-2">
+                    <Button
+                      onClick={exportSTL}
+                      size="sm"
+                      variant="outline"
+                      className="border-[#C4A264]/30 text-[#C4A264]"
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      STL
+                    </Button>
                   </div>
                 </div>
               </div>
