@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import Plan3DViewer from "@/components/Plan3DViewer";
 import {
   ArrowLeft,
   Loader2,
@@ -600,12 +601,18 @@ export default function MiniArchi() {
                     </Button>
                   </div>
                 </div>
-                <div className="aspect-video bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden">
-                  <div className={`text-center transition-transform duration-1000 ${isRotating ? "rotate-360" : ""}`}>
-                    <Box className="w-16 h-16 text-[#C4A264]/30 mx-auto mb-4" />
-                    <p className="text-[#F0EAE0]/40">Rendu 3D en cours...</p>
-                    <p className="text-xs text-[#F0EAE0]/30 mt-2">Intégration Three.js à venir</p>
-                  </div>
+                <div className="aspect-video bg-[#0a0a0a] relative overflow-hidden">
+                  {plan?.svg ? (
+                    <Plan3DViewer svg={plan.svg} />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <Box className="w-16 h-16 text-[#C4A264]/30 mx-auto mb-4" />
+                        <p className="text-[#F0EAE0]/40">Rendu 3D en cours...</p>
+                        <p className="text-xs text-[#F0EAE0]/30 mt-2">Intégration Three.js à venir</p>
+                      </div>
+                    </div>
+                  )}
                   <div className="absolute bottom-4 left-4 right-4 flex justify-center gap-2">
                     <Button
                       onClick={exportSTL}
