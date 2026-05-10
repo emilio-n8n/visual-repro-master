@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { CommandPalette } from "@/components/CommandPalette";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { FavoritesProvider } from "@/hooks/useFavorites";
+import { TemplatesProvider } from "@/hooks/useTemplates";
 
 // Lazy load pages for code splitting
 const Index = lazy(() => import("./pages/Index.tsx"));
@@ -89,12 +90,13 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <FavoritesProvider>
-              <WorkspaceProvider>
-                <CommandPalette />
-                <OfflineIndicator />
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
+            <TemplatesProvider>
+              <FavoritesProvider>
+                <WorkspaceProvider>
+                  <CommandPalette />
+                  <OfflineIndicator />
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/join/:token" element={<Join />} />
@@ -133,8 +135,9 @@ const App = () => (
               </Suspense>
             </WorkspaceProvider>
           </FavoritesProvider>
-        </AuthProvider>
-      </BrowserRouter>
+        </TemplatesProvider>
+      </AuthProvider>
+    </BrowserRouter>
     </TooltipProvider>
     </QueryClientProvider>
   </ErrorBoundary>
