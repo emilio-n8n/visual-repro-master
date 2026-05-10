@@ -47,41 +47,58 @@ export default function Agent() {
   }, [messages]);
 
   async function loadConversations() {
-    let q = supabase
-      .from("conversations")
-      .select("id, title, created_at")
-      .order("created_at", { ascending: false });
-    q = activeProjectId ? q.eq("project_id", activeProjectId) : q.is("project_id", null);
-    const { data } = await q;
-    setConversations(data ?? []);
+    try {
+      let q = supabase
+        .from("conversations")
+        .select("id, title, created_at")
+        .order("created_at", { ascending: false });
+      q = activeProjectId ? q.eq("project_id", activeProjectId) : q.is("project_id", null);
+      const { data, error } = await q;
+      if (error) throw error;
+      setConversations(data ?? []);
+    } catch (err) {
+      console.error("Failed to load conversations:", err);
+      toast({ title: "Erreur", description: "Impossible de charger les conversations", variant: "destructive" });
+    }
   }
 
   async function loadMessages(id: string) {
-    const { data } = await supabase
-      .from("messages")
-      .select("id, role, content, tool_calls, tool_call_id, created_at")
-      .eq("conversation_id", id)
-      .order("created_at");
-    const all = (data ?? []) as any[];
-    // Collect artifact ids per assistant message via subsequent tool messages
-    const result: Message[] = [];
-    for (let i = 0; i < all.length; i++) {
-      const m = all[i];
-      if (m.role === "tool") continue;
-      const msg: Message = { id: m.id, role: m.role, content: m.content, tool_calls: m.tool_calls };
-      if (m.role === "assistant" && m.tool_calls?.length) {
-        const ids: string[] = [];
-        for (let j = i + 1; j < all.length && all[j].role === "tool"; j++) {
-          try {
-            const r = JSON.parse(all[j].content);
-            if (r?.artifactId) ids.push(r.artifactId);
-          } catch {}
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("id, role, content, tool_calls, tool_call_id, created_at")
+        .eq("conversation_id", id)
+        .order("created_at");
+      if (error) throw error;
+
+      const all = (data ?? []) as any[];
+      const result: Message[] = [];
+      const seenIds = new Set<string>();
+
+      for (let i = 0; i < all.length; i++) {
+        const m = all[i];
+        if (m.role === "tool") continue;
+        const msg: Message = { id: m.id, role: m.role, content: m.content, tool_calls: m.tool_calls };
+        if (m.role === "assistant" && m.tool_calls?.length) {
+          const ids: string[] = [];
+          for (let j = i + 1; j < all.length && all[j].role === "tool"; j++) {
+            try {
+              const r = JSON.parse(all[j].content);
+              if (r?.artifactId && !seenIds.has(r.artifactId)) {
+                ids.push(r.artifactId);
+                seenIds.add(r.artifactId);
+              }
+            } catch {}
+          }
+          if (ids.length) msg.artifactIds = ids;
         }
-        if (ids.length) msg.artifactIds = ids;
+        result.push(msg);
       }
-      result.push(msg);
+      setMessages(result);
+    } catch (err) {
+      console.error("Failed to load messages:", err);
+      toast({ title: "Erreur", description: "Impossible de charger les messages", variant: "destructive" });
     }
-    setMessages(result);
   }
 
   async function newConversation() {
@@ -196,7 +213,7 @@ export default function Agent() {
                   setMessages((prev) =>
                     prev.map((m) =>
                       m.id === assistantId
-                        ? { ...m, artifactIds: [...(m.artifactIds ?? []), aId] }
+                        ? { ...m, artifactIds: [...new Set([...(m.artifactIds ?? []), aId])] }
                         : m
                     )
                   );
@@ -212,7 +229,7 @@ export default function Agent() {
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === assistantId
-                      ? { ...m, artifactIds: [...(m.artifactIds ?? []), aId] }
+                      ? { ...m, artifactIds: [...new Set([...(m.artifactIds ?? []), aId])] }
                       : m
                   )
                 );
@@ -243,8 +260,9 @@ export default function Agent() {
             onClick={newConversation}
             variant="ghost"
             className="w-full justify-start text-[#C4A264] hover:bg-[#C4A264]/10"
+            aria-label="Nouvelle conversation"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
             Nouvelle conversation
           </Button>
         </div>

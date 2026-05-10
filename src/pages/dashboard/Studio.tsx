@@ -129,18 +129,48 @@ function AiBubble({
   const [selection, setSelection] = useState("");
 
   useEffect(() => {
+    let rafId: number;
+    let isUpdating = false;
+
     function update() {
-      const sel = window.getSelection();
-      if (!sel || sel.isCollapsed || !containerRef.current) { setPos(null); setOpen(false); return; }
-      const range = sel.getRangeAt(0);
-      if (!containerRef.current.contains(range.commonAncestorContainer)) { setPos(null); setOpen(false); return; }
-      const rect = range.getBoundingClientRect();
-      if (rect.width === 0 && rect.height === 0) { setPos(null); return; }
-      setSelection(sel.toString());
-      setPos({ top: rect.top + window.scrollY - 40, left: rect.left + window.scrollX });
+      if (isUpdating) return;
+      isUpdating = true;
+
+      requestAnimationFrame(() => {
+        try {
+          const sel = window.getSelection();
+          if (!sel || sel.isCollapsed || !containerRef.current) {
+            setPos(null);
+            setOpen(false);
+            isUpdating = false;
+            return;
+          }
+          const range = sel.getRangeAt(0);
+          if (!containerRef.current.contains(range.commonAncestorContainer)) {
+            setPos(null);
+            setOpen(false);
+            isUpdating = false;
+            return;
+          }
+          const rect = range.getBoundingClientRect();
+          if (rect.width === 0 && rect.height === 0) {
+            setPos(null);
+            isUpdating = false;
+            return;
+          }
+          setSelection(sel.toString());
+          setPos({ top: rect.top + window.scrollY - 40, left: rect.left + window.scrollX });
+        } finally {
+          isUpdating = false;
+        }
+      });
     }
+
     document.addEventListener("selectionchange", update);
-    return () => document.removeEventListener("selectionchange", update);
+    return () => {
+      document.removeEventListener("selectionchange", update);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, [containerRef]);
 
   if (!pos) return null;
@@ -240,8 +270,10 @@ function DocumentStudio({
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML === "") {
       // If content is markdown-like or plain, try to render. If looks like HTML, inject directly.
+      // Always sanitize to prevent XSS
       const looksHtml = /<\w+[\s>]/.test(content);
-      editorRef.current.innerHTML = looksHtml ? content : mdLikeToHtml(content);
+      const sanitized = looksHtml ? sanitizeHtml(content) : mdLikeToHtml(content);
+      editorRef.current.innerHTML = sanitized;
     }
   }, [content]);
 
@@ -259,7 +291,9 @@ function DocumentStudio({
     try {
       const updated = await callAiEdit(artifact.id, instruction, selection || null);
       if (editorRef.current) {
-        editorRef.current.innerHTML = /<\w+[\s>]/.test(updated) ? updated : mdLikeToHtml(updated);
+        const looksHtml = /<\w+[\s>]/.test(updated);
+        const sanitized = looksHtml ? sanitizeHtml(updated) : mdLikeToHtml(updated);
+        editorRef.current.innerHTML = sanitized;
         onChange(editorRef.current.innerHTML);
         await onSave(editorRef.current.innerHTML);
       }
@@ -696,6 +730,42 @@ function HtmlStudio({
    helpers
 ============================================================ */
 function safeName(s: string) { return (s || "livrable").replace(/[^\w-]+/g, "_"); }
+// Sanitize HTML to prevent XSS - only allow safe tags and attributes
+function sanitizeHtml(html: string): string {
+  const allowedTags = ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'h1', 'h2', 'h3', 'ul', 'ol', 'li', 'a', 'div', 'span'];
+  const allowedAttrs = { 'a': ['href', 'target'] };
+
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+
+  function cleanNode(node: Node): string {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent || "";
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return "";
+
+    const el = node as HTMLElement;
+    const tag = el.tagName.toLowerCase();
+
+    if (!allowedTags.includes(tag)) {
+      return Array.from(el.childNodes).map(cleanNode).join("");
+    }
+
+    let attrs = "";
+    const allowed = allowedAttrs[tag as keyof typeof allowedAttrs] || [];
+    for (const attr of allowed) {
+      const val = el.getAttribute(attr);
+      if (val) {
+        attrs += ` ${attr}="${attr === "href" ? val.replace(/javascript:/i, "") : val}"`;
+      }
+    }
+
+    const children = Array.from(el.childNodes).map(cleanNode).join("");
+    return tag === "br" ? "<br>" : `<${tag}${attrs}>${children}</${tag}>`;
+  }
+
+  return doc.body ? Array.from(doc.body.childNodes).map(cleanNode).join("") : html;
+}
+
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 }

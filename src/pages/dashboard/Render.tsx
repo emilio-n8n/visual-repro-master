@@ -75,20 +75,32 @@ export default function RenderPage() {
     };
   }, [user]);
 
+  // Get signed URLs for renders that have output_path but no cached URL
+  const neededRenderIds = renders
+    .filter((r) => r.output_path && !signedUrls[r.id])
+    .map((r) => r.id);
+
   useEffect(() => {
-    const need = renders.filter((r) => r.output_path && !signedUrls[r.id]);
-    if (!need.length) return;
-    (async () => {
+    if (neededRenderIds.length === 0) return;
+
+    const fetchUrls = async () => {
       const updates: Record<string, string> = {};
-      for (const r of need) {
-        const { data } = await supabase.storage
-          .from("render-outputs")
-          .createSignedUrl(r.output_path!, 3600);
-        if (data?.signedUrl) updates[r.id] = data.signedUrl;
+      for (const r of renders) {
+        if (r.output_path && !signedUrls[r.id]) {
+          const { data } = await supabase.storage
+            .from("render-outputs")
+            .createSignedUrl(r.output_path, 3600);
+          if (data?.signedUrl) updates[r.id] = data.signedUrl;
+        }
       }
-      if (Object.keys(updates).length) setSignedUrls((s) => ({ ...s, ...updates }));
-    })();
-  }, [renders, signedUrls]);
+      if (Object.keys(updates).length > 0) {
+        setSignedUrls((prev) => ({ ...prev, ...updates }));
+      }
+    };
+
+    fetchUrls();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [neededRenderIds.join(",")]);
 
   const handleFile = (f: File | null) => {
     setFile(f);
@@ -139,6 +151,10 @@ export default function RenderPage() {
 
   const handleModify = async () => {
     if (!modifyTarget || !user || !modifyPrompt.trim()) return;
+    if (!modifyTarget.output_path) {
+      toast.error("Image source non disponible");
+      return;
+    }
     setModifying(true);
     try {
       const { data: inserted, error: insErr } = await supabase
@@ -146,7 +162,7 @@ export default function RenderPage() {
         .insert({
           user_id: user.id,
           status: "pending",
-          input_path: modifyTarget.output_path!, // reused from parent, satisfies NOT NULL
+          input_path: modifyTarget.output_path,
           style: modifyTarget.style,
           prompt: modifyPrompt.trim(),
           parent_id: modifyTarget.id,

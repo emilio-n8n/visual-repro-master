@@ -1,3 +1,4 @@
+import { lazy, Suspense, Component, ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -6,70 +7,130 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Index from "./pages/Index.tsx";
-import Auth from "./pages/Auth.tsx";
-import Onboarding from "./pages/Onboarding.tsx";
-import Join from "./pages/Join.tsx";
-import DashboardLayout from "./pages/dashboard/DashboardLayout.tsx";
-import Overview from "./pages/dashboard/Overview.tsx";
-import Render from "./pages/dashboard/Render.tsx";
-import Agent from "./pages/dashboard/Agent.tsx";
-import Settings from "./pages/dashboard/Settings.tsx";
-import Studio from "./pages/dashboard/Studio.tsx";
-import NotFound from "./pages/NotFound.tsx";
-import Admin from "./pages/Admin.tsx";
 
-const queryClient = new QueryClient();
+// Lazy load pages for code splitting
+const Index = lazy(() => import("./pages/Index.tsx"));
+const Auth = lazy(() => import("./pages/Auth.tsx"));
+const Onboarding = lazy(() => import("./pages/Onboarding.tsx"));
+const Join = lazy(() => import("./pages/Join.tsx"));
+const DashboardLayout = lazy(() => import("./pages/dashboard/DashboardLayout.tsx"));
+const Overview = lazy(() => import("./pages/dashboard/Overview.tsx"));
+const Render = lazy(() => import("./pages/dashboard/Render.tsx"));
+const Agent = lazy(() => import("./pages/dashboard/Agent.tsx"));
+const Settings = lazy(() => import("./pages/dashboard/Settings.tsx"));
+const Studio = lazy(() => import("./pages/dashboard/Studio.tsx"));
+const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+const Admin = lazy(() => import("./pages/Admin.tsx"));
+
+// Error Boundary component
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("Error caught by boundary:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#0b0b0b] flex items-center justify-center text-[#F0EAE0]">
+          <div className="text-center p-8">
+            <h1 className="text-2xl mb-4 text-red-400">Une erreur est survenue</h1>
+            <p className="text-[#F0EAE0]/60 mb-4">{this.state.error?.message}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-[#C4A264] text-black rounded"
+            >
+              Recharger la page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// Loading fallback
+function PageLoader() {
+  return (
+    <div className="min-h-screen bg-[#0b0b0b] flex items-center justify-center text-[#F0EAE0]/60">
+      <div className="animate-pulse">Chargement...</div>
+    </div>
+  );
+}
+
+// Single QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <WorkspaceProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/join/:token" element={<Join />} />
-              <Route
-                path="/onboarding"
-                element={
-                  <ProtectedRoute requireOnboarding={false}>
-                    <Onboarding />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/studio/:id"
-                element={
-                  <ProtectedRoute>
-                    <Studio />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <DashboardLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<Overview />} />
-                <Route path="render" element={<Render />} />
-                <Route path="agent" element={<Agent />} />
-                <Route path="settings" element={<Settings />} />
-              </Route>
-              <Route path="/admin" element={<Admin />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </WorkspaceProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <WorkspaceProvider>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/join/:token" element={<Join />} />
+                  <Route
+                    path="/onboarding"
+                    element={
+                      <ProtectedRoute requireOnboarding={false}>
+                        <Onboarding />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/dashboard/studio/:id"
+                    element={
+                      <ProtectedRoute>
+                        <Studio />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute>
+                        <DashboardLayout />
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route index element={<Overview />} />
+                    <Route path="render" element={<Render />} />
+                    <Route path="agent" element={<Agent />} />
+                    <Route path="settings" element={<Settings />} />
+                  </Route>
+                  <Route path="/admin" element={<Admin />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </WorkspaceProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
