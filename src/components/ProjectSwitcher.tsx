@@ -16,12 +16,23 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { ChevronDown, Plus, FolderOpen, Check } from "lucide-react";
 
+type ProjectForm = {
+  name: string;
+  client: string;
+  location: string;
+  type: string;
+  surface: string;
+  budget: string;
+  deadline: string;
+  brief: string;
+};
+
 export function ProjectSwitcher() {
   const { user } = useAuth();
   const { workspace, projects, activeProjectId, setActiveProjectId, refresh } = useWorkspace();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ProjectForm>({
     name: "",
     client: "",
     location: "",
@@ -60,8 +71,9 @@ export function ProjectSwitcher() {
         brief: "",
       });
       toast({ title: "Projet créé" });
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Une erreur est survenue";
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
     } finally {
       setBusy(false);
     }
@@ -153,7 +165,7 @@ export function ProjectSwitcher() {
                     {f.l}
                   </Label>
                   <Input
-                    value={(form as any)[f.k]}
+                    value={form[f.k as keyof ProjectForm]}
                     onChange={(e) => setForm({ ...form, [f.k]: e.target.value })}
                     placeholder={f.ph}
                     className="bg-black/40 border-[#C4A264]/20 text-[#F0EAE0] mt-1"

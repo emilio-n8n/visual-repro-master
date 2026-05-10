@@ -143,9 +143,11 @@ function DocumentStudio({ artifact, content, onChange, onSave }: {
   const [showToolbar, setShowToolbar] = useState(true);
 
   // Initialize content once
+  const [initialized, setInitialized] = useState(false);
   useEffect(() => {
-    if (editorRef.current && !editorRef.current.innerHTML) {
-      editorRef.current.innerHTML = content || "";
+    if (!initialized && editorRef.current) {
+      editorRef.current.innerHTML = content ?? "";
+      setInitialized(true);
     }
   }, []);
 
@@ -184,8 +186,9 @@ function DocumentStudio({ artifact, content, onChange, onSave }: {
       }
       setAiPrompt("");
       toast({ title: "Document mis à jour" });
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Une erreur est survenue";
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
     } finally { setBusy(false); }
   }
 
@@ -438,8 +441,9 @@ function SpreadsheetStudio({ artifact, content, onChange, onSave }: {
       await onSave(toCsv(newGrid));
       setAiPrompt("");
       toast({ title: "Tableur mis à jour" });
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Une erreur est survenue";
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
     } finally { setBusy(false); }
   }
 
@@ -584,8 +588,9 @@ function HtmlStudio({ artifact, content, onChange, onSave }: {
       await onSave(data.content);
       setAiPrompt("");
       toast({ title: "Mis à jour" });
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Une erreur est survenue";
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
     } finally { setBusy(false); }
   }
 
@@ -694,7 +699,7 @@ function parseCsv(text: string): string[][] {
       if (c === '"') q = true;
       else if (c === ",") { row.push(cur); cur = ""; }
       else if (c === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; }
-      else if (c === "\r") {} else cur += c;
+      else if (c === "\r") { /* skip carriage return */ } else cur += c;
     }
   }
   row.push(cur); if (row.some(v => v)) rows.push(row);

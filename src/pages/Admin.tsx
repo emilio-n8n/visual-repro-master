@@ -26,7 +26,7 @@ type Stats = {
   memories: number;
 };
 
-type Row = Record<string, any>;
+type SqlRow = { id: string };
 
 export default function Admin() {
   const [granted, setGranted] = useState(() => sessionStorage.getItem(STORAGE_KEY) === "1");
@@ -34,10 +34,10 @@ export default function Admin() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [users, setUsers] = useState<Row[]>([]);
-  const [workspaces, setWorkspaces] = useState<Row[]>([]);
-  const [projects, setProjects] = useState<Row[]>([]);
-  const [recent, setRecent] = useState<Row[]>([]);
+  const [users, setUsers] = useState<SqlRow[]>([]);
+  const [workspaces, setWorkspaces] = useState<SqlRow[]>([]);
+  const [projects, setProjects] = useState<SqlRow[]>([]);
+  const [recent, setRecent] = useState<SqlRow[]>([]);
   const [tab, setTab] = useState<"overview" | "users" | "workspaces" | "projects" | "activity">("overview");
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function Admin() {
         "messages", "renders", "artifacts", "memories",
       ] as const;
       const counts = await Promise.all(
-        tables.map((t) => supabase.from(t as any).select("id", { count: "exact", head: true }))
+        tables.map((t) => supabase.from(t).select("id", { count: "exact", head: true }))
       );
       setStats({
         users: counts[0].count ?? 0,
@@ -160,7 +160,7 @@ export default function Admin() {
         ].map(([k, label]) => (
           <button
             key={k}
-            onClick={() => setTab(k as any)}
+            onClick={() => setTab(k as typeof tab)}
             style={{
               padding: "14px 20px",
               background: "transparent",
@@ -286,7 +286,7 @@ const Table = ({ rows, cols }: { rows: Row[]; cols: string[] }) => {
   );
 };
 
-function fmt(v: any): string {
+function fmt(v: unknown): string {
   if (v == null) return "—";
   if (typeof v === "boolean") return v ? "✓" : "—";
   if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v)) {

@@ -30,7 +30,8 @@ export default function DashboardLayout() {
   const { user, signOut } = useAuth();
   const { workspace } = useWorkspace();
   const navigate = useNavigate();
-  const [notifs, setNotifs] = useState<any[]>([]);
+  type Notification = { id: string; read_at: string | null; title: string };
+  const [notifs, setNotifs] = useState<Notification[]>([]);
 
   useEffect(() => {
     if (!user) return;

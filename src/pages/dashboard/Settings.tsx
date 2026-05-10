@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, User, Building2, FileBox, Trash2, Download, ExternalLink, Users, Plus, Copy, Link2 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 type Profile = { id: string; full_name: string | null; avatar_url: string | null; locale: string | null };
 type Workspace = { id: string; name: string; slug: string; plan: string };
@@ -309,7 +310,7 @@ export default function Settings() {
   );
 }
 
-function Section({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
+function Section({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: React.ReactNode }) {
   return (
     <section className="mb-10">
       <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#C4A264]/15">

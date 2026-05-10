@@ -65,7 +65,24 @@ export default function Onboarding() {
   const [step, setStep] = useState<"choose" | "form" | "team" | "done">("choose");
   const [level, setLevel] = useState<Level>("full");
 
-  const [form, setForm] = useState({
+  type WorkspaceConfig = {
+    name: string;
+    style: string;
+    project_types: string;
+    tone: string;
+    email_signature: string;
+    tools: string;
+    deliverables: string;
+    clientele: string;
+    brand_values: string;
+    references_text: string;
+    process: string;
+    materials_pref: string;
+    suppliers: string;
+    typical_pricing: string;
+  };
+
+  const [form, setForm] = useState<WorkspaceConfig>({
     name: "",
     style: "",
     project_types: "",
@@ -103,7 +120,7 @@ export default function Onboarding() {
     }
     setSaving(true);
     try {
-      const payload: any = {
+      const payload: WorkspaceConfig & { workspace_id: string; email_templates?: { relais: string } } = {
         workspace_id: workspace.id,
         name: form.name,
         style: form.style,
@@ -140,8 +157,9 @@ export default function Onboarding() {
       await supabase.from("workspaces").update({ name: form.name }).eq("id", workspace.id);
 
       setStep("team");
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Une erreur est survenue";
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -178,8 +196,9 @@ export default function Onboarding() {
 
       await refresh();
       setStep("done");
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Une erreur est survenue";
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
     } finally {
       setSaving(false);
     }

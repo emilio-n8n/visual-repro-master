@@ -6,11 +6,12 @@ import {
   Download, ExternalLink, Loader2, FileSpreadsheet, LayoutGrid, BarChart3,
   Globe, FileText, Images, Wand2,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 type ArtifactType = "slideshow" | "spreadsheet" | "dataviz" | "website" | "document" | "moodboard";
 type Artifact = { id: string; type: ArtifactType; title: string; content: string; mime_type: string };
 
-const ICONS: Record<ArtifactType, any> = {
+const ICONS: Record<ArtifactType, LucideIcon> = {
   slideshow: LayoutGrid, spreadsheet: FileSpreadsheet, dataviz: BarChart3,
   website: Globe, document: FileText, moodboard: Images,
 };
@@ -107,9 +108,10 @@ export function ArtifactPreview({ artifactId }: { artifactId: string }) {
 }
 
 function MoodboardView({ content }: { content: string }) {
-  const [renders, setRenders] = useState<any[]>([]);
+  type RenderRow = { id: string; status: string; output_path: string; prompt: string; url?: string };
+  const [renders, setRenders] = useState<RenderRow[]>([]);
   let parsed: { renderIds: string[]; prompts: string[] } = { renderIds: [], prompts: [] };
-  try { parsed = JSON.parse(content); } catch {}
+  try { parsed = JSON.parse(content); } catch { /* ignore malformed content */ }
 
   useEffect(() => {
     let active = true;
@@ -118,7 +120,7 @@ function MoodboardView({ content }: { content: string }) {
       const { data } = await supabase.from("renders")
         .select("id, status, output_path, prompt").in("id", parsed.renderIds);
       if (!active || !data) return;
-      const withUrls = await Promise.all(data.map(async (r: any) => {
+      const withUrls = await Promise.all(data.map(async (r) => {
         if (r.output_path) {
           const { data: signed } = await supabase.storage.from("render-outputs").createSignedUrl(r.output_path, 3600);
           return { ...r, url: signed?.signedUrl };

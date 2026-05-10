@@ -14,7 +14,7 @@ type Message = {
   id: string;
   role: "user" | "assistant" | "tool" | "system";
   content: string;
-  tool_calls?: any;
+  tool_calls?: unknown;
   artifactIds?: string[];
 };
 
@@ -57,8 +57,8 @@ export default function Agent() {
       if (error) throw error;
       setConversations(data ?? []);
     } catch (err) {
-      console.error("Failed to load conversations:", err);
-      toast({ title: "Erreur", description: "Impossible de charger les conversations", variant: "destructive" });
+      const msg = err instanceof Error ? err.message : "Impossible de charger les conversations";
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
     }
   }
 
@@ -71,24 +71,24 @@ export default function Agent() {
         .order("created_at");
       if (error) throw error;
 
-      const all = (data ?? []) as any[];
+      const messagesData = data ?? [];
       const result: Message[] = [];
       const seenIds = new Set<string>();
 
-      for (let i = 0; i < all.length; i++) {
-        const m = all[i];
+      for (let i = 0; i < messagesData.length; i++) {
+        const m = messagesData[i];
         if (m.role === "tool") continue;
         const msg: Message = { id: m.id, role: m.role, content: m.content, tool_calls: m.tool_calls };
         if (m.role === "assistant" && m.tool_calls?.length) {
           const ids: string[] = [];
-          for (let j = i + 1; j < all.length && all[j].role === "tool"; j++) {
+          for (let j = i + 1; j < messagesData.length && messagesData[j].role === "tool"; j++) {
             try {
-              const r = JSON.parse(all[j].content);
+              const r = JSON.parse(messagesData[j].content);
               if (r?.artifactId && !seenIds.has(r.artifactId)) {
                 ids.push(r.artifactId);
                 seenIds.add(r.artifactId);
               }
-            } catch {}
+            } catch { /* ignore parse errors */ }
           }
           if (ids.length) msg.artifactIds = ids;
         }
@@ -96,8 +96,8 @@ export default function Agent() {
       }
       setMessages(result);
     } catch (err) {
-      console.error("Failed to load messages:", err);
-      toast({ title: "Erreur", description: "Impossible de charger les messages", variant: "destructive" });
+      const msg = err instanceof Error ? err.message : "Impossible de charger les messages";
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
     }
   }
 
@@ -244,8 +244,9 @@ export default function Agent() {
           }
         }
       }
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Une erreur est survenue";
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
