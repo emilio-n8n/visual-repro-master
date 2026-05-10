@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { CommandPalette } from "@/components/CommandPalette";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { FavoritesProvider } from "@/hooks/useFavorites";
 
 // Lazy load pages for code splitting
@@ -91,6 +92,7 @@ const App = () => (
             <FavoritesProvider>
               <WorkspaceProvider>
                 <CommandPalette />
+                <OfflineIndicator />
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
                     <Route path="/" element={<Index />} />
