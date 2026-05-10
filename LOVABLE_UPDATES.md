@@ -92,7 +92,12 @@ Les nouveaux providers ont été ajoutés à l'arbre React :
 
 1. **Appliquer les migrations** dans Supabase Dashboard → Migrations → Run
 2. **Pusher le frontend** — le code est prêt et build correctement
-3. Les nouvelles features (Kanban, Calendar, Tags, etc.) sont prêtes à être utilisées
+3. **Déployer la fonction edge Mini Archi**:
+   ```bash
+   supabase functions deploy forma-archi-generator --no-verify-jwt
+   ```
+4. Les nouvelles features (Kanban, Calendar, Tags, etc.) sont prêtes à être utilisées
+5. Tester la fonctionnalité Mini Archi: constraints → génération IA → 6 plans → sélection → vue 3D
 
 ---
 
