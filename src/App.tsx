@@ -1,4 +1,5 @@
 import { lazy, Suspense, Component, ReactNode, useEffect } from "react";
+import { initErrorTracking, captureError, addBreadcrumb } from "@/lib/error-tracker";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -45,7 +46,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("Error caught by boundary:", error, errorInfo);
+    captureError(error, { componentStack: errorInfo.componentStack });
   }
 
   render() {
@@ -112,8 +113,18 @@ function KeyboardShortcuts() {
   return null;
 }
 
+// Initialize error tracking at app startup
+function ErrorTrackerInit() {
+  useEffect(() => {
+    initErrorTracking();
+    addBreadcrumb('app', 'Application started');
+  }, []);
+  return null;
+}
+
 const App = () => (
   <ErrorBoundary>
+    <ErrorTrackerInit />
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
