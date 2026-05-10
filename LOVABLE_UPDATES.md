@@ -1,0 +1,104 @@
+# FORMA — Updates pendant l'absence de Lovable
+
+## Résumé
+
+Plusieurs nouvelles fonctionnalités ont été ajoutées au projet FORMA. **Toutes les migrations SQL doivent être appliquées** pour que le frontend fonctionne correctement.
+
+---
+
+## 1. Nouvelles Tables SQL (à appliquer)
+
+### Migration 1: `supabase/migrations/20260510120000_add_cloud_tables.sql`
+- `favorites` — favoris synchronisés cloud
+- `templates` — templates cloud
+- `analytics` — tracking usage
+- `activity_log` — historique des actions
+
+### Migration 2: `supabase/migrations/20260510140000_add_advanced_features.sql`
+- `project_tags` — tags sur les projets
+- `project_deadlines` — deadlines avec dates
+- `comments` — commentaires sur artifacts/rendus
+- `share_links` — liens de partage expirables
+- `presence` — présence utilisateurs temps réel
+- `notifications` — colonnes `read_at` et `action_url`
+
+---
+
+## 2. Nouveaux Hooks (cloud-based)
+
+Tous les hooks utilisent maintenant Supabase au lieu de localStorage :
+
+- `src/hooks/useFavorites.tsx` — favoris cloud (supprime localStorage)
+- `src/hooks/useTemplates.tsx` — templates cloud
+- `src/hooks/useAnalytics.ts` — logging vers DB
+- `src/hooks/useActivity.ts` — nouveau: audit trail
+- `src/hooks/useTags.tsx` — gestion tags projets
+- `src/hooks/useDeadlines.tsx` — gestion échéances
+- `src/hooks/useComments.tsx` — gestion commentaires
+- `src/hooks/useShareLinks.tsx` — création liens partage
+- `src/hooks/usePresence.tsx` — présence utilisateurs
+- `src/hooks/useNotifications.tsx` — centre notifications
+
+---
+
+## 3. Nouveaux Composants UI
+
+- `src/components/PresenceIndicator.tsx` — affiche qui est en ligne
+- `src/components/NotificationCenter.tsx` — hub central notifications
+- `src/components/TagManager.tsx` — interface gestion tags
+- `src/components/ShareButton.tsx` — partager artifacts/rendus
+- `src/components/KanbanBoard.tsx` — vue Kanban projets
+- `src/components/DeadlineCalendar.tsx` — vue Calendrier échéances
+
+---
+
+## 4. Améliorations App.tsx
+
+Les nouveaux providers ont été ajoutés à l'arbre React :
+```tsx
+<NotificationsProvider>
+  <PresenceProvider>
+    <TagsProvider>
+      <CommentsProvider>
+        <ShareLinksProvider>
+          <DeadlinesProvider>
+```
+
+---
+
+## 5. Améliorations DashboardLayout
+
+- Remplacé l'ancien système de notifications par `NotificationCenter`
+- Ajouté `PresenceIndicator` dans la sidebar
+
+---
+
+## 6. Améliorations ArtifactPreview
+
+- Ajouté `ShareButton` pour partager les livrables
+
+---
+
+## 7. Corrections de Bugs Précédentes
+
+- **Studio.tsx** — refonte complète des 3 mini-studios (Document, Spreadsheet, HTML)
+- **App.tsx** — ErrorBoundary, lazy loading, code splitting
+- **Render.tsx** — fix null assertions, infinite re-renders
+- **Agent.tsx** — try/catch, dedup artifactIds
+
+---
+
+## Instructions pour Lovable
+
+1. **Appliquer les migrations** dans Supabase Dashboard → Migrations → Run
+2. **Pusher le frontend** — le code est prêt et build correctement
+3. Les nouvelles features (Kanban, Calendar, Tags, etc.) sont prêtes à être utilisées
+
+---
+
+## Stack Actuelle
+
+- Frontend: React 18 + Vite + TypeScript + Tailwind + shadcn/ui
+- Backend: Supabase (Postgres + RLS + Auth + Storage + Edge Functions)
+- IA: Google Gemini via OpenAI-compatible endpoint
+- Exports: docx, xlsx, jspdf, file-saver, html2canvas
