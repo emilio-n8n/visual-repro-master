@@ -1,4 +1,4 @@
-import { lazy, Suspense, Component, ReactNode } from "react";
+import { lazy, Suspense, Component, ReactNode, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -91,6 +91,26 @@ const queryClient = new QueryClient({
   },
 });
 
+// Keyboard shortcuts handler
+function KeyboardShortcuts() {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        const dialog = document.querySelector('[cmdk-dialog]') as HTMLDialogElement;
+        dialog?.showModal();
+      }
+      if (e.key === "?" && e.shiftKey) {
+        e.preventDefault();
+        alert("Raccourcis FORMA:\n\nCtrl+G - Dashboard\nCtrl+R - Rendus\nCtrl+A - Mini Archi\nCtrl+K - Palette\nÉchap - Fermer");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+  return null;
+}
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -108,6 +128,7 @@ const App = () => (
                         <CommentsProvider>
                           <ShareLinksProvider>
                             <DeadlinesProvider>
+                              <KeyboardShortcuts />
                               <CommandPalette />
                               <OfflineIndicator />
                               <Suspense fallback={<PageLoader />}>
