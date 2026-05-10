@@ -11,6 +11,12 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { FavoritesProvider } from "@/hooks/useFavorites";
 import { TemplatesProvider } from "@/hooks/useTemplates";
+import { TagsProvider } from "@/hooks/useTags";
+import { NotificationsProvider } from "@/hooks/useNotifications";
+import { PresenceProvider } from "@/hooks/usePresence";
+import { CommentsProvider } from "@/hooks/useComments";
+import { ShareLinksProvider } from "@/hooks/useShareLinks";
+import { DeadlinesProvider } from "@/hooks/useDeadlines";
 
 // Lazy load pages for code splitting
 const Index = lazy(() => import("./pages/Index.tsx"));
@@ -93,52 +99,64 @@ const App = () => (
             <TemplatesProvider>
               <FavoritesProvider>
                 <WorkspaceProvider>
-                  <CommandPalette />
-                  <OfflineIndicator />
-                  <Suspense fallback={<PageLoader />}>
-                    <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/join/:token" element={<Join />} />
-                    <Route
-                      path="/onboarding"
-                      element={
-                        <ProtectedRoute requireOnboarding={false}>
-                          <Onboarding />
-                        </ProtectedRoute>
-                      }
-                    />
-                  <Route
-                    path="/dashboard/studio/:id"
-                    element={
-                      <ProtectedRoute>
-                        <Studio />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/dashboard"
-                    element={
-                      <ProtectedRoute>
-                        <DashboardLayout />
-                      </ProtectedRoute>
-                    }
-                  >
-                    <Route index element={<Overview />} />
-                    <Route path="render" element={<Render />} />
-                    <Route path="agent" element={<Agent />} />
-                    <Route path="settings" element={<Settings />} />
-                  </Route>
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-            </WorkspaceProvider>
-          </FavoritesProvider>
-        </TemplatesProvider>
-      </AuthProvider>
-    </BrowserRouter>
-    </TooltipProvider>
+                  <NotificationsProvider>
+                    <PresenceProvider>
+                      <TagsProvider>
+                        <CommentsProvider>
+                          <ShareLinksProvider>
+                            <DeadlinesProvider>
+                              <CommandPalette />
+                              <OfflineIndicator />
+                              <Suspense fallback={<PageLoader />}>
+                                <Routes>
+                                  <Route path="/" element={<Index />} />
+                                  <Route path="/auth" element={<Auth />} />
+                                  <Route path="/join/:token" element={<Join />} />
+                                  <Route
+                                    path="/onboarding"
+                                    element={
+                                      <ProtectedRoute requireOnboarding={false}>
+                                        <Onboarding />
+                                      </ProtectedRoute>
+                                    }
+                                  />
+                                  <Route
+                                    path="/dashboard/studio/:id"
+                                    element={
+                                      <ProtectedRoute>
+                                        <Studio />
+                                      </ProtectedRoute>
+                                    }
+                                  />
+                                  <Route
+                                    path="/dashboard"
+                                    element={
+                                      <ProtectedRoute>
+                                        <DashboardLayout />
+                                      </ProtectedRoute>
+                                    }
+                                  >
+                                    <Route index element={<Overview />} />
+                                    <Route path="render" element={<Render />} />
+                                    <Route path="agent" element={<Agent />} />
+                                    <Route path="settings" element={<Settings />} />
+                                  </Route>
+                                  <Route path="/admin" element={<Admin />} />
+                                  <Route path="*" element={<NotFound />} />
+                                </Routes>
+                              </Suspense>
+                            </DeadlinesProvider>
+                          </ShareLinksProvider>
+                        </CommentsProvider>
+                      </TagsProvider>
+                    </PresenceProvider>
+                  </NotificationsProvider>
+                </WorkspaceProvider>
+              </FavoritesProvider>
+            </TemplatesProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   </ErrorBoundary>
 );

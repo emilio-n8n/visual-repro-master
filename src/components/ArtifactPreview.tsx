@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { ShareButton } from "@/components/ShareButton";
 import {
   Download, ExternalLink, Loader2, FileSpreadsheet, LayoutGrid, BarChart3,
   Globe, FileText, Images, Wand2,
@@ -102,6 +103,7 @@ export function ArtifactPreview({ artifactId }: { artifactId: string }) {
         <Button size="sm" variant="ghost" className="h-8 px-2 text-[#F0EAE0]/70 hover:text-[#C4A264]" onClick={quickDownload} title="Télécharger">
           <Download className="w-3.5 h-3.5" />
         </Button>
+        <ShareButton entityType="artifact" entityId={a.id} entityTitle={a.title} />
       </div>
     </div>
   );

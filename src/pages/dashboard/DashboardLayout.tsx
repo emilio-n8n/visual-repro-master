@@ -1,23 +1,17 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ProjectSwitcher } from "@/components/ProjectSwitcher";
+import { PresenceIndicator } from "@/components/PresenceIndicator";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import {
   Sparkles,
   Image as ImageIcon,
   Bot,
   Settings,
   LogOut,
-  Bell,
 } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 const navItems = [
   { to: "/dashboard", icon: Sparkles, label: "Vue d'ensemble", end: true },
@@ -30,56 +24,6 @@ export default function DashboardLayout() {
   const { user, signOut } = useAuth();
   const { workspace } = useWorkspace();
   const navigate = useNavigate();
-  type Notification = { id: string; read_at: string | null; title: string };
-  const [notifs, setNotifs] = useState<Notification[]>([]);
-  const [loadingNotifs, setLoadingNotifs] = useState(true);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    setLoadingNotifs(true);
-
-    // Initial fetch with proper cleanup
-    supabase
-      .from("notifications")
-      .select("id, read_at, title")
-      .order("created_at", { ascending: false })
-      .limit(20)
-      .then(({ data, error }) => {
-        setLoadingNotifs(false);
-        if (!error && data) setNotifs(data);
-      });
-
-    // Subscribe to realtime changes
-    const channel = supabase
-      .channel("notifications")
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "notifications",
-        filter: `user_id=eq.${user.id}`,
-      }, (payload) => {
-        setNotifs((prev) => [payload.new as Notification, ...prev].slice(0, 20));
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id]);
-
-  const unread = notifs.filter((n) => !n.read_at).length;
-
-  async function markAllRead() {
-    if (!user?.id || unread === 0) return;
-    await supabase
-      .from("notifications")
-      .update({ read_at: new Date().toISOString() })
-      .is("read_at", null)
-      .eq("user_id", user.id);
-    setNotifs((prev) =>
-      prev.map((n) => (n.read_at ? n : { ...n, read_at: new Date().toISOString() }))
-    );
-  }
 
   return (
     <div className="min-h-screen flex bg-[#0b0b0b] text-[#F0EAE0]">
@@ -120,41 +64,9 @@ export default function DashboardLayout() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-[#C4A264]/15 space-y-2">
-          <Popover onOpenChange={(o) => o && markAllRead()}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start text-[#F0EAE0]/70 hover:text-[#F0EAE0] relative"
-              >
-                <Bell className="w-4 h-4 mr-2" />
-                Notifications
-                {unread > 0 && (
-                  <span className="ml-auto bg-[#C4A264] text-black text-[10px] rounded-full px-1.5 py-0.5">
-                    {unread}
-                  </span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 bg-[#0b0b0b] border-[#C4A264]/20 p-0 max-h-96 overflow-auto">
-              {notifs.length === 0 ? (
-                <div className="p-4 text-xs text-[#F0EAE0]/40 text-center">
-                  Aucune notification
-                </div>
-              ) : (
-                notifs.map((n) => (
-                  <div
-                    key={n.id}
-                    className="p-3 border-b border-white/5 text-xs hover:bg-white/5"
-                  >
-                    <div className="text-[#C4A264] mb-0.5">{n.title}</div>
-                    <div className="text-[#F0EAE0]/60">{n.body}</div>
-                  </div>
-                ))
-              )}
-            </PopoverContent>
-          </Popover>
+        <div className="p-4 border-t border-[#C4A264]/15 space-y-3">
+          <PresenceIndicator />
+          <NotificationCenter />
           <div className="text-xs text-[#F0EAE0]/50 truncate">{user?.email}</div>
           <Button
             variant="ghost"
