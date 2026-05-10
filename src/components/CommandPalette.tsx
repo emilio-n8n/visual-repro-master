@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -114,8 +114,9 @@ export function CommandPalette() {
 
   const [query, setQuery] = useState("");
 
-  const filteredItems = items().filter((item) =>
-    item.label.toLowerCase().includes(query.toLowerCase())
+  const filteredItems = useMemo(
+    () => items().filter((item) => item.label.toLowerCase().includes(query.toLowerCase())),
+    [items, query]
   );
 
   return (

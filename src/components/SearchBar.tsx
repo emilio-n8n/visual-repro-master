@@ -1,5 +1,5 @@
 import { Search, X } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface SearchResult {
@@ -33,18 +33,34 @@ export function SearchBar({
   const [filteredResults, setFilteredResults] = useState<SearchResult[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSearch = useCallback((searchQuery: string) => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    debounceRef.current = setTimeout(() => {
+      if (searchQuery.length > 0) {
+        const filtered = results.filter(r =>
+          r.title.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setFilteredResults(filtered);
+        setIsOpen(true);
+      } else {
+        setIsOpen(false);
+      }
+    }, 300);
+  }, [results]);
 
   useEffect(() => {
-    if (query.length > 0) {
-      const filtered = results.filter(r =>
-        r.title.toLowerCase().includes(query.toLowerCase())
-      );
-      setFilteredResults(filtered);
-      setIsOpen(true);
-    } else {
-      setIsOpen(false);
-    }
-  }, [query, results]);
+    handleSearch(query);
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [query, handleSearch]);
 
   const handleSelect = (result: SearchResult) => {
     setQuery("");

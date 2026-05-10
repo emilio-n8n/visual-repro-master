@@ -17,7 +17,7 @@ export function LoadingButton({
 }: LoadingButtonProps) {
   return (
     <Button
-      className={cn(className)}
+      className={cn("transition-transform active:scale-95", className)}
       disabled={disabled || loading}
       {...props}
     >

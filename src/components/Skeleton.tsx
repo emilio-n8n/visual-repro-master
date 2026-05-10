@@ -6,7 +6,7 @@ interface SkeletonProps {
 
 export function Skeleton({ className }: SkeletonProps) {
   return (
-    <div className={cn("animate-pulse bg-[#C4A264]/10 rounded", className)} />
+    <div className={cn("animate-shimmer bg-[#C4A264]/10 rounded", className)} />
   );
 }
 

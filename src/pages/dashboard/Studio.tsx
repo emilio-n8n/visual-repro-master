@@ -10,13 +10,18 @@ import {
   Heading1, Heading2, Heading3, Table, Table2, Palette, Code, Eye,
   Copy, Check, X, FileSpreadsheet, FileText, FileImage,
 } from "lucide-react";
-import jsPDF from "jspdf";
-import * as XLSX from "xlsx";
-import {
-  Document as DocxDocument, Packer, Paragraph, TextRun, HeadingLevel,
-  AlignmentType,
-} from "docx";
 import { saveAs } from "file-saver";
+
+// Lazy load export libraries
+const lazyJspdf = () => import("jspdf");
+const lazyXlsx = () => import("xlsx");
+const lazyDocx = () => import("docx").then(m => ({
+  Document: m.Document,
+  Packer: m.Packer,
+  Paragraph: m.Paragraph,
+  TextRun: m.TextRun,
+  HeadingLevel: m.HeadingLevel,
+});
 
 type Artifact = {
   id: string;
@@ -194,7 +199,8 @@ function DocumentStudio({ artifact, content, onChange, onSave }: {
 
   // Export functions
   async function exportDocx() {
-    const doc = new DocxDocument({
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await lazyDocx();
+    const doc = new Document({
       sections: [{
         properties: {},
         children: [
@@ -211,6 +217,7 @@ function DocumentStudio({ artifact, content, onChange, onSave }: {
   }
 
   async function exportPdf() {
+    const jsPDF = (await lazyJspdf()).default;
     const pdf = new jsPDF({ unit: "pt", format: "a4" });
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(24);
@@ -447,7 +454,8 @@ function SpreadsheetStudio({ artifact, content, onChange, onSave }: {
     } finally { setBusy(false); }
   }
 
-  function exportXlsx() {
+  async function exportXlsx() {
+    const XLSX = await lazyXlsx();
     const ws = XLSX.utils.aoa_to_sheet(grid);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Données");
