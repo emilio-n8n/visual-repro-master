@@ -135,3 +135,42 @@ All colors MUST be HSL.
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Touch targets - minimum 44x44px for mobile accessibility (Apple HIG & WCAG) */
+@layer components {
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  [role="button"],
+  [role="tab"],
+  [tabindex]:not([tabindex="-1"]) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Links that are within navigation or buttons */
+  nav a,
+  .nav-links a,
+  .btn,
+  button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Form elements */
+  input,
+  select,
+  textarea {
+    padding: 12px;
+  }
+
+  /* Ensure icons in buttons are touchable */
+  button svg,
+  a svg {
+    pointer-events: none;
+  }
+}
