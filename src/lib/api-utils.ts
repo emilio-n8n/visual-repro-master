@@ -6,6 +6,9 @@ export interface ApiError {
   code?: string;
 }
 
+// Default timeout of 30 seconds
+const DEFAULT_TIMEOUT = 30000;
+
 export class ApiError extends Error {
   status?: number;
   code?: string;
@@ -17,6 +20,32 @@ export class ApiError extends Error {
     this.code = code;
   }
 }
+
+// Fetch with timeout
+export const fetchWithTimeout = async (
+  url: string,
+  options: RequestInit & { timeout?: number } = {}
+): Promise<Response> => {
+  const { timeout = DEFAULT_TIMEOUT, ...fetchOptions } = options;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(`La requête a expiré après ${timeout}ms`);
+    }
+    throw error;
+  }
+};
 
 export const handleApiError = (error: unknown): ApiError => {
   if (error instanceof ApiError) {

@@ -7,7 +7,9 @@ export const passwordSchema = z
   .string()
   .min(8, "Le mot de passe doit contenir au moins 8 caractères")
   .regex(/[A-Z]/, "Le mot de passe doit contenir une majuscule")
-  .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre");
+  .regex(/[a-z]/, "Le mot de passe doit contenir une minuscule")
+  .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre")
+  .regex(/[!@#$%^&*(),.?":{}|<>]/, "Le mot de passe doit contenir un caractère spécial (!@#$%^&*(),.?\":{}|<>)");
 
 export const projectNameSchema = z
   .string()
@@ -40,6 +42,10 @@ export function sanitizeInput(input: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#x27;")
+    .replace(/on\w+\s*=/gi, "") // Remove event handlers (onclick, onload, onerror, onmouseover, etc.)
+    .replace(/javascript\s*:/gi, "") // Remove javascript: URLs
+    .replace(/data\s*:/gi, "") // Remove data: URLs (can embed scripts)
+    .replace(/vbscript\s*:/gi, "") // Remove vbscript: URLs
     .trim();
 }
 
