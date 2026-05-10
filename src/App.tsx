@@ -7,6 +7,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { CommandPalette } from "@/components/CommandPalette";
+import { FavoritesProvider } from "@/hooks/useFavorites";
 
 // Lazy load pages for code splitting
 const Index = lazy(() => import("./pages/Index.tsx"));
@@ -86,20 +88,22 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <WorkspaceProvider>
-              <Suspense fallback={<PageLoader />}>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/join/:token" element={<Join />} />
-                  <Route
-                    path="/onboarding"
-                    element={
-                      <ProtectedRoute requireOnboarding={false}>
-                        <Onboarding />
-                      </ProtectedRoute>
-                    }
-                  />
+            <FavoritesProvider>
+              <WorkspaceProvider>
+                <CommandPalette />
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/join/:token" element={<Join />} />
+                    <Route
+                      path="/onboarding"
+                      element={
+                        <ProtectedRoute requireOnboarding={false}>
+                          <Onboarding />
+                        </ProtectedRoute>
+                      }
+                    />
                   <Route
                     path="/dashboard/studio/:id"
                     element={
@@ -126,9 +130,10 @@ const App = () => (
                 </Routes>
               </Suspense>
             </WorkspaceProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
+          </FavoritesProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </TooltipProvider>
     </QueryClientProvider>
   </ErrorBoundary>
 );
