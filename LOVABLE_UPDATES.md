@@ -140,6 +140,22 @@ Les nouveaux providers ont été ajoutés à l'arbre React :
 
 ### UI/UX
 - `App.tsx` — PageLoader amélioré avec spinner moderne
+- `src/components/ThemeToggle.tsx` — Toggle dark/light mode
+- `src/components/ExportMenu.tsx` — Menu export JSON/CSV
+- `src/components/EmptyState.tsx` — États vides/loading/error
+- `src/components/SkipLink.tsx` — Skip link accessibilité
+- Keyboard shortcuts (Ctrl+K, Ctrl+G, etc.)
+
+### i18n & Types
+- `src/lib/i18n.ts` — Système i18n FR/EN avec detection navigateur
+- `src/lib/types.ts` — Types TypeScript partagés pour tous les entités
+- `src/hooks/useTheme.ts` — Hook pour gérer le thème dark/light
+- `src/hooks/useKeyboardShortcuts.ts` — Raccourcis clavier globaux
+
+### PWA Offline
+- `public/sw.js` — Service Worker pour cache offline
+- `main.tsx` — Enregistrement du Service Worker
+- Améliorations manifest.json et index.html pour PWA
 
 ---
 
