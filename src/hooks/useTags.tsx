@@ -61,14 +61,18 @@ export const TagsProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const loadTags = async () => {
-      const { data, error } = await supabase
-        .from("project_tags")
-        .select("*")
-        .eq("workspace_id", activeWorkspaceId)
-        .order("name");
+      try {
+        const { data, error } = await supabase
+          .from("project_tags")
+          .select("*")
+          .eq("workspace_id", activeWorkspaceId)
+          .order("name");
 
-      if (!error && data) {
-        setTags(data);
+        if (!error && data) {
+          setTags(data);
+        }
+      } catch (e) {
+        console.warn("Project_tags table not available:", e);
       }
       setLoading(false);
     };

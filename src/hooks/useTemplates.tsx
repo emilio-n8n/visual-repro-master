@@ -43,21 +43,25 @@ export const TemplatesProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const loadTemplates = async () => {
-      const { data, error } = await supabase
-        .from("templates")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from("templates")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
 
-      if (!error && data) {
-        setTemplates(data);
+        if (!error && data) {
+          setTemplates(data);
+        }
+      } catch (e) {
+        console.warn("Templates table not available:", e);
       }
       setLoading(false);
     };
 
     loadTemplates();
 
-    // Subscribe to changes
+    // Subscribe to changes (only if table exists)
     const channel = supabase
       .channel("templates-changes")
       .on("postgres_changes", {

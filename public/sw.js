@@ -39,8 +39,13 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Skip non-GET requests (POST, PUT, DELETE for API calls)
+  if (event.request.method !== "GET") {
+    return;
+  }
+
   // Skip API calls
-  if (event.request.url.includes("/functions/v1/")) {
+  if (event.request.url.includes("/functions/v1/") || event.request.url.includes(".supabase.co")) {
     return;
   }
 

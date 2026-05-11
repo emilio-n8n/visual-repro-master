@@ -34,20 +34,25 @@ export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const loadFavorites = async () => {
-      const { data, error } = await supabase
-        .from("favorites")
-        .select("artifact_id")
-        .eq("user_id", user.id);
+      try {
+        const { data, error } = await supabase
+          .from("favorites")
+          .select("artifact_id")
+          .eq("user_id", user.id);
 
-      if (!error && data) {
-        setFavorites(data.map((f) => f.artifact_id));
+        if (!error && data) {
+          setFavorites(data.map((f) => f.artifact_id));
+        }
+      } catch (e) {
+        // Table might not exist yet - silently fail
+        console.warn("Favorites table not available:", e);
       }
       setLoading(false);
     };
 
     loadFavorites();
 
-    // Subscribe to changes
+    // Subscribe to changes (only if table exists)
     const channel = supabase
       .channel("favorites-changes")
       .on("postgres_changes", {

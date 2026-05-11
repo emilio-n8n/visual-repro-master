@@ -47,22 +47,33 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     setLoading(true);
-    const [{ data: ws }, { data: profile }] = await Promise.all([
-      supabase.from("workspaces").select("id, name, slug, plan").limit(1).maybeSingle(),
-      supabase.from("profiles").select("onboarding_completed").eq("id", user.id).maybeSingle(),
-    ]);
-    setWorkspace(ws);
-    setOnboardingCompleted(profile?.onboarding_completed ?? false);
-    if (ws) {
-      const { data: prj } = await supabase
-        .from("projects")
-        .select("id, name, client")
-        .eq("workspace_id", ws.id)
-        .order("updated_at", { ascending: false });
-      setProjects(prj ?? []);
-      if (activeProjectId && !(prj ?? []).some((p) => p.id === activeProjectId)) {
-        setActiveProjectId(null);
+    try {
+      const [{ data: ws, error: wsError }, { data: profile }] = await Promise.all([
+        supabase.from("workspaces").select("id, name, slug, plan").limit(1).maybeSingle(),
+        supabase.from("profiles").select("onboarding_completed").eq("id", user.id).maybeSingle(),
+      ]);
+
+      if (wsError) {
+        console.warn("Workspaces table not available:", wsError);
       }
+      setWorkspace(ws);
+      setOnboardingCompleted(profile?.onboarding_completed ?? false);
+      if (ws) {
+        const { data: prj, error: prjError } = await supabase
+          .from("projects")
+          .select("id, name, client")
+          .eq("workspace_id", ws.id)
+          .order("updated_at", { ascending: false });
+        if (prjError) {
+          console.warn("Projects table not available:", prjError);
+        }
+        setProjects(prj ?? []);
+        if (activeProjectId && !(prj ?? []).some((p) => p.id === activeProjectId)) {
+          setActiveProjectId(null);
+        }
+      }
+    } catch (e) {
+      console.warn("Workspace tables not available:", e);
     }
     setLoading(false);
   }

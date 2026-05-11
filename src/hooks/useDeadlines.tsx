@@ -42,14 +42,18 @@ export const DeadlinesProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const loadDeadlines = async () => {
-      const { data, error } = await supabase
-        .from("project_deadlines")
-        .select("*")
-        .eq("project_id", activeWorkspaceId) // This is wrong - should filter by projects in workspace
-        .order("date", { ascending: true });
+      try {
+        const { data, error } = await supabase
+          .from("project_deadlines")
+          .select("*")
+          .eq("project_id", activeWorkspaceId) // This is wrong - should filter by projects in workspace
+          .order("date", { ascending: true });
 
-      if (!error && data) {
-        setDeadlines(data);
+        if (!error && data) {
+          setDeadlines(data);
+        }
+      } catch (e) {
+        console.warn("Project_deadlines table not available:", e);
       }
       setLoading(false);
     };

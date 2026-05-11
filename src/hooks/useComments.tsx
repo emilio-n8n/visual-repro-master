@@ -41,14 +41,18 @@ export const CommentsProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const loadComments = async () => {
-      const { data, error } = await supabase
-        .from("comments")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
+      try {
+        const { data, error } = await supabase
+          .from("comments")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(100);
 
-      if (!error && data) {
-        setComments(data);
+        if (!error && data) {
+          setComments(data);
+        }
+      } catch (e) {
+        console.warn("Comments table not available:", e);
       }
       setLoading(false);
     };
