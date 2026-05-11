@@ -333,13 +333,12 @@ const Index = () => {
             <div
               key={i}
               data-reveal
-              className="reveal group"
+              className="reveal group hover-lift"
               style={{
                 padding: 40, background: COLORS.surface, border: `1px solid ${COLORS.border}`,
                 borderRadius: 4, transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
                 transitionDelay: `${i * 0.15}s`,
               }}
-              className="hover-lift"
             >
               <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
                 <div style={{ fontSize: 11, letterSpacing: "0.2em", color: COLORS.gold, fontFamily: fontSerif }}>{item.step}</div>
@@ -545,13 +544,12 @@ const Index = () => {
             <div
               key={tier.name}
               data-reveal
-              className="reveal"
+              className="reveal hover-lift"
               style={{
                 position: "relative", padding: 40, border: `1px solid ${tier.featured ? COLORS.gold : COLORS.border}`,
                 background: tier.featured ? `linear-gradient(180deg, ${COLORS.goldSoft}, ${COLORS.surface})` : COLORS.surface,
                 borderRadius: 4, transitionDelay: `${i * 0.1}s`, transition: "all 0.3s",
               }}
-              className="hover-lift"
             >
               {tier.featured && (
                 <div style={{ position: "absolute", top: -12, left: 40, background: COLORS.gold, color: COLORS.bg, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", padding: "6px 16px", fontWeight: 600 }}>
@@ -606,13 +604,12 @@ const Index = () => {
         </p>
         <Link
           to="/auth"
-          className="group"
+          className="group hover:!bg-[#D4B87A] hover:scale-[1.02]"
           style={{
             display: "inline-flex", alignItems: "center", gap: 12, padding: "20px 48px",
             background: COLORS.gold, color: COLORS.bg, fontSize: 14, letterSpacing: "0.2em", textTransform: "uppercase",
             fontWeight: 500, textDecoration: "none", transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
-          className="hover:!bg-[#D4B87A] hover:scale-[1.02]"
         >
           Créer mon studio <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
         </Link>

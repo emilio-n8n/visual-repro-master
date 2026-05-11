@@ -118,6 +118,15 @@ export interface Project {
  * @property {Artifact[]} [artifacts] - Artefacts générés par la tâche
  * @property {string} created_at - Date de création de la tâche
  */
+
+/**
+ * Type pour les fichiers joints aux messages.
+ * @typedef {Object} Attachment
+ * @property {string} url - URL publique du fichier sur Supabase Storage
+ * @property {string} name - Nom original du fichier
+ * @property {string} type - MIME type du fichier
+ * @property {number} size - Taille en octets
+ */
 export interface Render {
   id: string;
   project_id: string;
@@ -149,6 +158,14 @@ export interface AgentTask {
   result?: string;
   artifacts?: Artifact[];
   created_at: string;
+}
+
+// Attachment types
+export interface Attachment {
+  url: string;
+  name: string;
+  type: string;
+  size: number;
 }
 
 /**

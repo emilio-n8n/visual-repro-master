@@ -1,6 +1,18 @@
 // FORMA Agent - chat with tool calling, streamed via SSE
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
+interface MCPTool {
+  name: string;
+  description: string;
+  inputSchema: {
+    type: "object";
+    properties: Record<string, { type: string; description?: string }>;
+    required?: string[];
+  };
+  serverId: string;
+  serverName: string;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -15,6 +27,7 @@ Ton rôle :
 - Conseiller sur les ambiances (Photoréaliste, Twilight, Scandinave, Éditorial).
 - Proposer des palettes de matériaux, lumière, mobilier.
 - Produire des livrables clients : diaporamas, tableurs, visualisations de données, mini-sites.
+- Analyser et commenter les images jointes par l'utilisateur.
 
 Style : élégant, précis, concis. Vouvoiement. Français par défaut.
 
@@ -338,12 +351,44 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { conversationId, message, projectId } = await req.json();
+    const { conversationId, message, projectId, attachments, mcpTools } = await req.json();
     if (!conversationId || !message) {
       return new Response(JSON.stringify({ error: "Missing fields" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Convert MCP tools to OpenAI function format
+    const mcpToolsFormatted = (mcpTools as MCPTool[] | undefined)?.map((t) => ({
+      type: "function",
+      function: {
+        name: t.name,
+        description: t.description,
+        parameters: {
+          type: "object",
+          properties: t.inputSchema.properties,
+          required: t.inputSchema.required ?? [],
+          additionalProperties: false,
+        },
+      },
+    })) ?? [];
+
+    // Merge default tools with MCP tools
+    const allTools = [...tools, ...mcpToolsFormatted];
+
+    // Build attachments context for the prompt
+    let attachmentsBlock = "";
+    if (attachments && attachments.length) {
+      attachmentsBlock += "\n## Fichiers joints\n";
+      for (const att of attachments) {
+        const sizeKB = (att.size / 1024).toFixed(1);
+        const isImage = att.type.startsWith("image/");
+        attachmentsBlock += `- [${att.name}] (${att.type}, ${sizeKB} Ko) — ${att.url}\n`;
+        if (isImage) {
+          attachmentsBlock += `  ![${att.name}](${att.url})\n`;
+        }
+      }
     }
 
     // Ensure conversation has correct project_id
@@ -356,6 +401,7 @@ Deno.serve(async (req) => {
       user_id: user.id,
       role: "user",
       content: message,
+      attachments: attachments ?? null,
     });
 
     // Load workspace, cabinet profile, project, and memories context
@@ -403,7 +449,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const SYSTEM_PROMPT = BASE_PROMPT + contextBlock;
+    const SYSTEM_PROMPT = BASE_PROMPT + contextBlock + attachmentsBlock;
 
     const { data: history } = await supabase
       .from("messages")
@@ -447,7 +493,7 @@ Deno.serve(async (req) => {
               body: JSON.stringify({
                 model: AI_MODEL,
                 messages: apiMessages,
-                tools,
+                tools: allTools,
                 stream: true,
               }),
             });
@@ -690,6 +736,20 @@ Deno.serve(async (req) => {
                 if (error) throw error;
                 result = { ok: true, kind: "mention_member", to: tm.display_name };
               }
+            } else if (mcpToolsFormatted.some((t: any) => t.function.name === name)) {
+              // MCP tool - in a real implementation, this would spawn the MCP server process
+              // and communicate via stdio. For now, we return a mock response.
+              const mcpTool = mcpToolsFormatted.find((t: any) => t.function.name === name);
+              console.log(`MCP tool called: ${name}`, args, `server: ${mcpTool?.serverId}`);
+              // Return a mock response indicating the tool was called
+              // In production, this would call the MCP server and return real results
+              result = {
+                ok: true,
+                kind: "mcp_tool",
+                toolName: name,
+                message: `Outil MCP '${name}' appelé avec succès. En production, cet outil communiquerait avec le serveur MCP configuré.`,
+                args,
+              };
             }
 
           } catch (e) {

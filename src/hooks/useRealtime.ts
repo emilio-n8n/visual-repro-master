@@ -82,7 +82,7 @@ export function useRealtime() {
       }
 
       const channelName = `project-${projectId}`;
-      console.log(`[Realtime] Subscribe to project: ${projectId}`);
+      console.warn(`[Realtime] Subscribe to project: ${projectId}`);
 
       const channel = supabase
         .channel(channelName)
@@ -134,7 +134,7 @@ export function useRealtime() {
       }
 
       const channelName = `notifications-${user.id}`;
-      console.log(`[Realtime] Subscribe to notifications for user: ${user.id}`);
+      console.warn(`[Realtime] Subscribe to notifications for user: ${user.id}`);
 
       const channel = supabase
         .channel(channelName)
@@ -180,7 +180,7 @@ export function useRealtime() {
           },
           (payload) => {
             // Handle deleted notifications
-            console.log("[Realtime] Notification deleted:", payload.old);
+            console.warn("[Realtime] Notification deleted:", payload.old);
           }
         )
         .subscribe((status) => {
@@ -218,7 +218,7 @@ export function useRealtime() {
       }
 
       const channelName = `presence-workspace-${activeWorkspaceId}`;
-      console.log(`[Realtime] Subscribe to presence in workspace: ${activeWorkspaceId}`);
+      console.warn(`[Realtime] Subscribe to presence in workspace: ${activeWorkspaceId}`);
 
       const channel = supabase.channel(channelName);
 
@@ -254,10 +254,10 @@ export function useRealtime() {
           callback(presenceMap);
         })
         .on("presence", { event: "join" }, ({ key, newPresences }) => {
-          console.log("[Realtime] User joined:", key, newPresences);
+          console.warn("[Realtime] User joined:", key, newPresences);
         })
         .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
-          console.log("[Realtime] User left:", key, leftPresences);
+          console.warn("[Realtime] User left:", key, leftPresences);
         })
         .subscribe((status) => {
           if (status === "SUBSCRIBED") {
@@ -310,7 +310,7 @@ export function useRealtime() {
       }
 
       const channelName = `workspace-projects-${activeWorkspaceId}`;
-      console.log(`[Realtime] Subscribe to projects in workspace: ${activeWorkspaceId}`);
+      console.warn(`[Realtime] Subscribe to projects in workspace: ${activeWorkspaceId}`);
 
       const channel = supabase
         .channel(channelName)

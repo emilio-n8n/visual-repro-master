@@ -3,12 +3,13 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { useArtifactVersions } from "@/hooks/useArtifactVersions";
 import {
   ArrowLeft, Download, Loader2, Save, Wand2, ChevronDown, ChevronRight,
   Sparkles, Plus, Trash2, Type, Bold, Italic, Underline as UnderlineIcon,
   List, ListOrdered, AlignLeft, AlignCenter, AlignRight, Link2,
   Heading1, Heading2, Heading3, Table, Table2, Palette, Code, Eye,
-  Copy, Check, X, FileSpreadsheet, FileText, FileImage,
+  Copy, Check, X, FileSpreadsheet, FileText, FileImage, History, RotateCcw,
 } from "lucide-react";
 import { saveAs } from "file-saver";
 
@@ -21,7 +22,7 @@ const lazyDocx = () => import("docx").then(m => ({
   Paragraph: m.Paragraph,
   TextRun: m.TextRun,
   HeadingLevel: m.HeadingLevel,
-});
+}));
 
 type Artifact = {
   id: string;
@@ -38,6 +39,8 @@ export default function Studio() {
   const [loading, setLoading] = useState(true);
   const [editedContent, setEditedContent] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showVersions, setShowVersions] = useState(false);
+  const { versions, loading: versionsLoading, saving: versionsSaving, loadVersions, saveVersion, restoreVersion } = useArtifactVersions(id);
 
   useEffect(() => {
     if (!id) return;
@@ -49,6 +52,10 @@ export default function Studio() {
       });
   }, [id]);
 
+  useEffect(() => {
+    if (showVersions) loadVersions();
+  }, [showVersions, loadVersions]);
+
   const persist = useCallback(async (content: string) => {
     if (!artifact) return;
     setSaving(true);
@@ -57,6 +64,18 @@ export default function Studio() {
     if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" });
     else { setArtifact({ ...artifact, content }); setEditedContent(content); }
   }, [artifact]);
+
+  const handleSaveVersion = useCallback(async () => {
+    if (!editedContent) return;
+    await saveVersion(editedContent);
+  }, [editedContent, saveVersion]);
+
+  const handleRestoreVersion = useCallback(async (versionId: string) => {
+    const content = await restoreVersion(versionId);
+    if (content) {
+      setEditedContent(content);
+    }
+  }, [restoreVersion]);
 
   if (loading) {
     return (
@@ -80,6 +99,8 @@ export default function Studio() {
         artifact={artifact}
         onBack={() => navigate(-1)}
         saving={saving}
+        onShowVersions={() => setShowVersions(true)}
+        versionsSaving={versionsSaving}
       />
 
       {/* Content */}
@@ -94,6 +115,17 @@ export default function Studio() {
           <HtmlStudio content={editedContent} onChange={setEditedContent} onSave={persist} artifact={artifact} />
         )}
       </div>
+
+      {/* Versions Modal */}
+      <VersionsModal
+        open={showVersions}
+        onClose={() => setShowVersions(false)}
+        versions={versions}
+        loading={versionsLoading}
+        onSave={handleSaveVersion}
+        onRestore={handleRestoreVersion}
+        saving={versionsSaving}
+      />
     </div>
   );
 }
@@ -101,7 +133,13 @@ export default function Studio() {
 /* ============================================================
    HEADER
 ============================================================ */
-function StudioHeader({ artifact, onBack, saving }: { artifact: Artifact; onBack: () => void; saving: boolean }) {
+function StudioHeader({ artifact, onBack, saving, onShowVersions, versionsSaving }: {
+  artifact: Artifact;
+  onBack: () => void;
+  saving: boolean;
+  onShowVersions?: () => void;
+  versionsSaving?: boolean;
+}) {
   const typeIcon = {
     spreadsheet: <FileSpreadsheet className="w-4 h-4" />,
     document: <FileText className="w-4 h-4" />,
@@ -123,12 +161,110 @@ function StudioHeader({ artifact, onBack, saving }: { artifact: Artifact; onBack
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium truncate">{artifact.title}</div>
       </div>
+      <Button variant="ghost" size="sm" onClick={onShowVersions} disabled={versionsSaving} className="text-[#F0EAE0]/70 hover:text-[#C4A264]">
+        <History className="w-4 h-4 mr-1" /> Versions
+      </Button>
       {saving && (
         <span className="text-xs text-[#F0EAE0]/40 flex items-center gap-2">
           <Loader2 className="w-3 h-3 animate-spin" /> Enregistrement...
         </span>
       )}
     </header>
+  );
+}
+
+/* ============================================================
+   VERSIONS MODAL
+============================================================ */
+function VersionsModal({
+  open,
+  onClose,
+  versions,
+  loading,
+  onSave,
+  onRestore,
+  saving,
+}: {
+  open: boolean;
+  onClose: () => void;
+  versions: { id: string; version_number: number; created_at: string; content: string; profiles?: { full_name: string | null } }[];
+  loading: boolean;
+  onSave: () => void;
+  onRestore: (versionId: string) => void;
+  saving: boolean;
+}) {
+  if (!open) return null;
+
+  return (
+    <dialog
+      open={open}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+    >
+      <div className="bg-[#111] border border-[#C4A264]/20 rounded-lg w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#C4A264]/15">
+          <h2 className="text-lg font-medium text-[#F0EAE0] flex items-center gap-2">
+            <History className="w-5 h-5 text-[#C4A264]" />
+            Historique des versions
+          </h2>
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-[#F0EAE0]/70 hover:text-[#F0EAE0]">
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-3 px-6 py-3 border-b border-[#C4A264]/15 bg-[#0a0a0a]">
+          <Button size="sm" onClick={onSave} disabled={saving} className="bg-[#C4A264] text-black">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            Sauvegarder une version
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-auto p-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-12 text-[#F0EAE0]/40">
+              <Loader2 className="w-5 h-5 animate-spin mr-2" /> Chargement...
+            </div>
+          ) : versions.length === 0 ? (
+            <div className="text-center py-12 text-[#F0EAE0]/40">
+              <History className="w-12 h-12 mx-auto mb-4 opacity-20" />
+              <p>Aucune version sauvegardée.</p>
+              <p className="text-sm mt-1">Cliquez sur "Sauvegarder une version" pour créer un point de restauration.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {versions.map((v) => (
+                <div key={v.id} className="flex items-center justify-between p-4 bg-[#0a0a0a] border border-[#C4A264]/10 rounded-lg hover:border-[#C4A264]/30 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-[#C4A264]">Version {v.version_number}</span>
+                      <span className="text-xs text-[#F0EAE0]/40">
+                        {new Date(v.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    <div className="text-xs text-[#F0EAE0]/50 mt-1">
+                      Par {v.profiles?.full_name ?? "Utilisateur inconnu"}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (confirm(`Restaurer la version ${v.version_number} ?`)) {
+                        onRestore(v.id);
+                        onClose();
+                      }
+                    }}
+                    className="border-[#C4A264]/30 text-[#C4A264] hover:bg-[#C4A264]/10"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-1" /> Restaurer
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </dialog>
   );
 }
 
@@ -148,13 +284,13 @@ function DocumentStudio({ artifact, content, onChange, onSave }: {
   const [showToolbar, setShowToolbar] = useState(true);
 
   // Initialize content once
-  const [initialized, setInitialized] = useState(false);
+  const initializedRef = useRef(false);
   useEffect(() => {
-    if (!initialized && editorRef.current) {
+    if (!initializedRef.current && editorRef.current) {
       editorRef.current.innerHTML = content ?? "";
-      setInitialized(true);
+      initializedRef.current = true;
     }
-  }, []);
+  }, [content]);
 
   // Word count
   useEffect(() => {

@@ -1,21 +1,24 @@
 // API Error handling utilities
 
-export interface ApiError {
+/**
+ * Standardized API error structure
+ */
+export interface ApiErrorInfo {
   message: string;
   status?: number;
   code?: string;
 }
 
 // Default timeout of 30 seconds
-const DEFAULT_TIMEOUT = 30000;
+const DEFAULT_TIMEOUT_MS = 30_000;
 
-export class ApiError extends Error {
+export class FormaApiError extends Error {
   status?: number;
   code?: string;
 
   constructor(message: string, status?: number, code?: string) {
     super(message);
-    this.name = "ApiError";
+    this.name = "FormaApiError";
     this.status = status;
     this.code = code;
   }
@@ -26,7 +29,7 @@ export const fetchWithTimeout = async (
   url: string,
   options: RequestInit & { timeout?: number } = {}
 ): Promise<Response> => {
-  const { timeout = DEFAULT_TIMEOUT, ...fetchOptions } = options;
+  const { timeout = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -47,26 +50,26 @@ export const fetchWithTimeout = async (
   }
 };
 
-export const handleApiError = (error: unknown): ApiError => {
-  if (error instanceof ApiError) {
-    return error;
+export const handleApiError = (error: unknown): ApiErrorInfo => {
+  if (error instanceof FormaApiError) {
+    return { message: error.message, status: error.status, code: error.code };
   }
 
   if (error instanceof Error) {
     // Network errors
     if (error.message.includes("network") || error.message.includes("fetch")) {
-      return new ApiError("Erreur de connexion. Vérifiez votre connexion internet.", 0, "NETWORK_ERROR");
+      return { message: "Erreur de connexion. Vérifiez votre connexion internet.", status: 0, code: "NETWORK_ERROR" };
     }
 
     // Timeout errors
     if (error.message.includes("timeout")) {
-      return new ApiError("La requête a pris trop de temps. Réessayez.", 0, "TIMEOUT");
+      return { message: "La requête a pris trop de temps. Réessayez.", status: 0, code: "TIMEOUT" };
     }
 
-    return new ApiError(error.message, 0, "UNKNOWN");
+    return { message: error.message, status: 0, code: "UNKNOWN" };
   }
 
-  return new ApiError("Une erreur inattendue s'est produite", 0, "UNKNOWN");
+  return { message: "Une erreur inattendue s'est produite", status: 0, code: "UNKNOWN" };
 };
 
 export const isOnline = (): boolean => {

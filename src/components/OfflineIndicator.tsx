@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { WifiOff, Wifi, Loader2 } from "lucide-react";
 
-export function OfflineIndicator() {
+export const OfflineIndicator = memo(function OfflineIndicator() {
   const [online, setOnline] = useState(navigator.onLine);
   const [pending, setPending] = useState(false);
   const [showReconnected, setShowReconnected] = useState(false);
@@ -51,7 +51,7 @@ export function OfflineIndicator() {
       )}
     </div>
   );
-}
+});
 
 // Hook to track pending requests
 export function usePendingRequests() {

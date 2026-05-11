@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, memo } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ const LABELS: Record<ArtifactType, string> = {
   website: "Site web", document: "Document", moodboard: "Moodboard",
 };
 
-export function ArtifactPreview({ artifactId }: { artifactId: string }) {
+export const ArtifactPreview = memo(function ArtifactPreview({ artifactId }: { artifactId: string }) {
   const [a, setA] = useState<Artifact | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -107,13 +107,15 @@ export function ArtifactPreview({ artifactId }: { artifactId: string }) {
       </div>
     </div>
   );
-}
+});
 
-function MoodboardView({ content }: { content: string }) {
+export const MoodboardView = memo(function MoodboardView({ content }: { content: string }) {
   type RenderRow = { id: string; status: string; output_path: string; prompt: string; url?: string };
   const [renders, setRenders] = useState<RenderRow[]>([]);
-  let parsed: { renderIds: string[]; prompts: string[] } = { renderIds: [], prompts: [] };
-  try { parsed = JSON.parse(content); } catch { /* ignore malformed content */ }
+  const parsed = useMemo(() => {
+    try { return JSON.parse(content) as { renderIds: string[]; prompts: string[] }; }
+    catch { return { renderIds: [], prompts: [] }; }
+  }, [content]);
 
   useEffect(() => {
     let active = true;
@@ -136,7 +138,7 @@ function MoodboardView({ content }: { content: string }) {
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "renders" }, () => load())
       .subscribe();
     return () => { active = false; supabase.removeChannel(ch); };
-  }, [content]);
+  }, [content, parsed.renderIds]);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-3 bg-black/40">
@@ -159,4 +161,4 @@ function MoodboardView({ content }: { content: string }) {
       })}
     </div>
   );
-}
+});

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -19,7 +19,7 @@ type CommandItem = {
   shortcut?: string;
 };
 
-export function CommandPalette() {
+export const CommandPalette = memo(function CommandPalette() {
   const navigate = useNavigate();
   const { projects, activeProjectId, setActiveProjectId } = useWorkspace();
   const { signOut } = useAuth();
@@ -162,4 +162,4 @@ export function CommandPalette() {
       </DialogContent>
     </Dialog>
   );
-}
+});

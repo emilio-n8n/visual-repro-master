@@ -1,5 +1,6 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { loadKeybindings, type Keybinding } from "@/lib/keybindings";
 
 type ShortcutHandler = () => void;
 
@@ -37,7 +38,63 @@ export function useKeyboardShortcuts(shortcuts: Shortcut[]) {
   }, [handleKeyDown]);
 }
 
-// Common shortcuts for FORMA
+// Customizable keybindings hook
+export function useCustomizableShortcuts(
+  handlers: Partial<Record<Keybinding["action"], () => void>>
+) {
+  const navigate = useNavigate();
+
+  const shortcuts = useMemo((): Shortcut[] => {
+    const bindings = loadKeybindings();
+    return bindings.map((binding) => {
+      let handler: ShortcutHandler = () => {};
+
+      switch (binding.action) {
+        case "OPEN_SEARCH":
+          handler = () => {
+            const cmdPalette = document.querySelector('[cmdk-dialog]') as HTMLDialogElement;
+            cmdPalette?.showModal();
+          };
+          break;
+        case "DASHBOARD":
+          handler = () => navigate("/dashboard");
+          break;
+        case "RENDER":
+          handler = () => navigate("/dashboard/render");
+          break;
+        case "ARCHI":
+          handler = () => navigate("/archi");
+          break;
+        case "GENERATE":
+        case "SAVE":
+        case "NEW_ARTIFACT":
+        case "UNDO":
+        case "REDO":
+        case "COPY":
+        case "PASTE":
+        case "BOLD":
+        case "ITALIC":
+        case "CLOSE":
+        case "SHOW_SHORTCUTS":
+          handler = () => handlers[binding.action]?.();
+          break;
+      }
+
+      return {
+        key: binding.key,
+        ctrl: binding.ctrl,
+        shift: binding.shift,
+        alt: binding.alt,
+        handler,
+        description: binding.description,
+      };
+    });
+  }, [navigate, handlers]);
+
+  useKeyboardShortcuts(shortcuts);
+}
+
+// Common shortcuts for FORMA (legacy)
 export function useGlobalShortcuts() {
   const navigate = useNavigate();
 

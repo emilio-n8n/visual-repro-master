@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, memo } from "react";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,16 +19,16 @@ const COLUMNS = [
   { id: "active", label: "En cours", color: "#3B82F6" },
   { id: "review", label: "En revue", color: "#F59E0B" },
   { id: "completed", label: "Terminé", color: "#10B981" },
-];
+] as const;
 
-export function KanbanBoard() {
+export const KanbanBoard = memo(function KanbanBoard() {
   const { activeWorkspaceId } = useWorkspace();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [draggedProject, setDraggedProject] = useState<string | null>(null);
 
-  // Load projects
-  useState(() => {
+  // Load projects on mount or workspace change
+  useEffect(() => {
     if (!activeWorkspaceId) return;
     supabase
       .from("projects")
@@ -39,20 +39,22 @@ export function KanbanBoard() {
         if (data) setProjects(data as Project[]);
         setLoading(false);
       });
-  });
+  }, [activeWorkspaceId]);
 
-  const getProjectsByStatus = (status: string) =>
-    projects.filter((p) => p.status === status);
+  const getProjectsByStatus = useCallback((status: string) =>
+    projects.filter((p) => p.status === status),
+    [projects]
+  );
 
-  const handleDragStart = (projectId: string) => {
+  const handleDragStart = useCallback((projectId: string) => {
     setDraggedProject(projectId);
-  };
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-  };
+  }, []);
 
-  const handleDrop = async (newStatus: string) => {
+  const handleDrop = useCallback(async (newStatus: string) => {
     if (!draggedProject) return;
     await supabase
       .from("projects")
@@ -62,7 +64,7 @@ export function KanbanBoard() {
       prev.map((p) => (p.id === draggedProject ? { ...p, status: newStatus } : p))
     );
     setDraggedProject(null);
-  };
+  }, [draggedProject]);
 
   if (loading) {
     return <div className="p-8 text-[#F0EAE0]/50">Chargement des projets...</div>;
@@ -148,4 +150,4 @@ export function KanbanBoard() {
       </div>
     </div>
   );
-}
+});

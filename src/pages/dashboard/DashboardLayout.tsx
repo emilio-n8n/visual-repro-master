@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { memo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -25,7 +26,7 @@ const navItems = [
   { to: "/dashboard/settings", icon: Settings, label: "Paramètres" },
 ];
 
-export default function DashboardLayout() {
+const DashboardLayout = memo(function DashboardLayout() {
   const { user, signOut } = useAuth();
   const { workspace } = useWorkspace();
   const navigate = useNavigate();
@@ -147,4 +148,6 @@ export default function DashboardLayout() {
       </main>
     </div>
   );
-}
+});
+
+export default DashboardLayout;

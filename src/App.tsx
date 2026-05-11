@@ -18,6 +18,7 @@ import { PresenceProvider } from "@/hooks/usePresence";
 import { CommentsProvider } from "@/hooks/useComments";
 import { ShareLinksProvider } from "@/hooks/useShareLinks";
 import { DeadlinesProvider } from "@/hooks/useDeadlines";
+import { RenderModeProvider } from "@/hooks/useRenderMode.tsx";
 
 // Lazy load pages for code splitting
 const Index = lazy(() => import("./pages/Index.tsx"));
@@ -140,6 +141,7 @@ const App = () => (
                         <CommentsProvider>
                           <ShareLinksProvider>
                             <DeadlinesProvider>
+                              <RenderModeProvider>
                               <KeyboardShortcuts />
                               <CommandPalette />
                               <OfflineIndicator />
@@ -182,6 +184,7 @@ const App = () => (
                                   <Route path="*" element={<NotFound />} />
                                 </Routes>
                               </Suspense>
+                              </RenderModeProvider>
                             </DeadlinesProvider>
                           </ShareLinksProvider>
                         </CommentsProvider>

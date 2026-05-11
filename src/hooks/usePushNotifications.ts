@@ -94,11 +94,11 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
     try {
       // First, ensure service worker is ready
       const reg = await navigator.serviceWorker.ready;
-      console.log("[Push] Service worker ready:", reg.scope);
+      console.warn("[Push] Service worker ready:", reg.scope);
 
       // Request permission
       const newPermission = await Notification.requestPermission();
-      console.log("[Push] Permission result:", newPermission);
+      console.warn("[Push] Permission result:", newPermission);
 
       setPermission(newPermission as PermissionState);
 
@@ -117,7 +117,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
           await saveSubscriptionToBackend(user.id, subData);
         }
 
-        console.log("[Push] Subscription successful:", subData.endpoint);
+        console.warn("[Push] Subscription successful:", subData.endpoint);
         setIsLoading(false);
         return true;
       } else {
@@ -156,7 +156,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
         }
 
         setSubscription(null);
-        console.log("[Push] Unsubscribed successfully");
+        console.warn("[Push] Unsubscribed successfully");
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erreur inconnue";
@@ -198,7 +198,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
           requireInteraction: true,
         });
       });
-      console.log("[Push] Test notification shown:", type);
+      console.warn("[Push] Test notification shown:", type);
     } catch (err) {
       console.error("[Push] Error showing test notification:", err);
       setError("Erreur lors de l'affichage de la notification");
@@ -249,7 +249,7 @@ async function saveSubscriptionToBackend(userId: string, subscription: PushSubsc
     if (error) {
       console.error("[Push] Error saving subscription to backend:", error);
     } else {
-      console.log("[Push] Subscription saved to backend");
+      console.warn("[Push] Subscription saved to backend");
     }
   } catch (err) {
     console.error("[Push] Error saving subscription:", err);
@@ -268,7 +268,7 @@ async function removeSubscriptionFromBackend(userId: string, endpoint: string): 
     if (error) {
       console.error("[Push] Error removing subscription from backend:", error);
     } else {
-      console.log("[Push] Subscription removed from backend");
+      console.warn("[Push] Subscription removed from backend");
     }
   } catch (err) {
     console.error("[Push] Error removing subscription:", err);

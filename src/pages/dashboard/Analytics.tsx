@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,11 +54,7 @@ export default function Analytics() {
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d">("30d");
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadAnalytics();
-  }, [workspace, timeRange]);
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     if (!workspace?.id) return;
 
     setIsLoading(true);
@@ -111,18 +107,23 @@ export default function Analytics() {
       setRenderHistory(history);
 
       // Mock category breakdown
-      setCategoryBreakdown([
-        { name: "Rendus", value: 45, color: "#C4A264" },
-        { name: "Projets", value: 30, color: "#8B7355" },
-        { name: "Modèles", value: 15, color: "#A09080" },
-        { name: "Fichiers", value: 10, color: "#6B5B4F" },
-      ]);
+      const categories: CategoryBreakdown[] = [
+        { name: "Résidentiel", value: 45, color: "#C4A264" },
+        { name: "Commercial", value: 25, color: "#8B7355" },
+        { name: "Industriel", value: 15, color: "#6B5344" },
+        { name: "Public", value: 15, color: "#A08060" },
+      ];
+      setCategoryBreakdown(categories);
     } catch (error) {
-      console.error("[Analytics] Error loading data:", error);
+      console.error("Error loading analytics:", error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [workspace?.id, timeRange]);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [loadAnalytics]);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);

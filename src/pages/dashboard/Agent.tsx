@@ -2,12 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { useMCP, useMCPToolsPanel } from "@/hooks/useMCP";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { Send, Plus, MessageSquare, Loader2, FolderOpen } from "lucide-react";
+import { Send, Plus, MessageSquare, Loader2, FolderOpen, Plug, ChevronDown, ChevronUp } from "lucide-react";
 import { ArtifactPreview } from "@/components/ArtifactPreview";
+import { FileUploader, AttachmentDisplay, uploadAttachments } from "@/components/FileUploader";
+import { MCPToolsPanel } from "@/components/MCPToolsPanel";
+
+type Attachment = { url: string; name: string; type: string; size: number };
 
 type Conversation = { id: string; title: string; created_at: string };
 type Message = {
@@ -16,16 +21,22 @@ type Message = {
   content: string;
   tool_calls?: unknown;
   artifactIds?: string[];
+  attachments?: Attachment[];
 };
 
 export default function Agent() {
   const { user } = useAuth();
   const { activeProjectId, projects } = useWorkspace();
+  const { servers, getToolsForModel } = useMCP();
+  const { isOpen: mcpPanelOpen, open: openMCPPanel, close: closeMCPPanel } = useMCPToolsPanel();
+  const [showTools, setShowTools] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const activeProject = projects.find((p) => p.id === activeProjectId);
@@ -66,7 +77,7 @@ export default function Agent() {
     try {
       const { data, error } = await supabase
         .from("messages")
-        .select("id, role, content, tool_calls, tool_call_id, created_at")
+        .select("id, role, content, tool_calls, tool_call_id, created_at, attachments")
         .eq("conversation_id", id)
         .order("created_at");
       if (error) throw error;
@@ -78,7 +89,13 @@ export default function Agent() {
       for (let i = 0; i < messagesData.length; i++) {
         const m = messagesData[i];
         if (m.role === "tool") continue;
-        const msg: Message = { id: m.id, role: m.role, content: m.content, tool_calls: m.tool_calls };
+        const msg: Message = {
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        tool_calls: m.tool_calls,
+        attachments: (m.attachments as Attachment[] | null) ?? undefined,
+      };
         if (m.role === "assistant" && m.tool_calls?.length) {
           const ids: string[] = [];
           for (let j = i + 1; j < messagesData.length && messagesData[j].role === "tool"; j++) {
@@ -122,14 +139,29 @@ export default function Agent() {
   }
 
   async function send() {
-    if (!input.trim() || loading || !user) return;
+    if ((!input.trim() && !attachedFiles.length) || loading || !user) return;
+
+    // Upload attachments first
+    let attachments: Attachment[] = [];
+    if (attachedFiles.length) {
+      setUploading(true);
+      try {
+        attachments = await uploadAttachments(attachedFiles, user.id);
+      } catch (err) {
+        toast({ title: "Erreur", description: "Échec de l'envoi des fichiers", variant: "destructive" });
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+    }
+
     let convId = activeId;
     if (!convId) {
       const { data, error } = await supabase
         .from("conversations")
         .insert({
           user_id: user.id,
-          title: input.slice(0, 60),
+          title: input.slice(0, 60) || "Fichier joint",
           project_id: activeProjectId,
         })
         .select()
@@ -147,10 +179,12 @@ export default function Agent() {
       id: crypto.randomUUID(),
       role: "user",
       content: input,
+      attachments: attachments.length ? attachments : undefined,
     };
     setMessages((prev) => [...prev, userMsg]);
     const messageText = input;
     setInput("");
+    setAttachedFiles([]);
     setLoading(true);
 
     try {
@@ -164,7 +198,13 @@ export default function Agent() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ conversationId: convId, message: messageText, projectId: activeProjectId }),
+        body: JSON.stringify({
+          conversationId: convId,
+          message: messageText,
+          projectId: activeProjectId,
+          attachments,
+          mcpTools: getToolsForModel(),
+        }),
       });
 
       if (!resp.ok || !resp.body) {
@@ -299,11 +339,27 @@ export default function Agent() {
               Votre assistant IA pour rendus, ambiances et matériaux.
             </p>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 border border-[#C4A264]/20 rounded-sm text-xs">
-            <FolderOpen className="w-3 h-3 text-[#C4A264]" />
-            <span className="text-[#F0EAE0]/70">
-              {activeProject ? activeProject.name : "Hors projet"}
-            </span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-1.5 border border-[#C4A264]/20 rounded-sm text-xs">
+              <FolderOpen className="w-3 h-3 text-[#C4A264]" />
+              <span className="text-[#F0EAE0]/70">
+                {activeProject ? activeProject.name : "Hors projet"}
+              </span>
+            </div>
+            <Button
+              onClick={openMCPPanel}
+              variant="outline"
+              size="sm"
+              className="border-[#C4A264]/30 text-[#C4A264] hover:bg-[#C4A264]/10"
+            >
+              <Plug className="w-3.5 h-3.5 mr-1" />
+              MCP
+              {servers.filter(s => s.enabled && s.status === "connected").length > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 bg-[#C4A264]/20 rounded text-[10px]">
+                  {servers.filter(s => s.enabled && s.status === "connected").length}
+                </span>
+              )}
+            </Button>
           </div>
         </div>
 
@@ -337,6 +393,7 @@ export default function Agent() {
                       <ReactMarkdown>{m.content}</ReactMarkdown>
                     </div>
                   )}
+                  {m.attachments?.map((att) => <AttachmentDisplay key={att.url} attachment={att} />)}
                   {m.artifactIds?.map((id) => (
                     <ArtifactPreview key={id} artifactId={id} />
                   ))}
@@ -351,29 +408,38 @@ export default function Agent() {
         </div>
 
         <div className="border-t border-[#C4A264]/15 p-4">
-          <div className="flex gap-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  send();
-                }
-              }}
-              placeholder="Décrivez ce que vous voulez créer…"
-              disabled={loading}
-              className="bg-black/40 border-[#C4A264]/20 text-[#F0EAE0] placeholder:text-[#F0EAE0]/30"
+          <div className="space-y-3">
+            <FileUploader
+              onFilesChange={setAttachedFiles}
+              attachedFiles={attachedFiles}
+              disabled={loading || uploading}
             />
-            <Button
-              onClick={send}
-              disabled={loading || !input.trim()}
-              className="bg-[#C4A264] hover:bg-[#C4A264]/90 text-black"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </Button>
+            <div className="flex gap-2">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    send();
+                  }
+                }}
+                placeholder="Décrivez ce que vous voulez créer…"
+                disabled={loading || uploading}
+                className="bg-black/40 border-[#C4A264]/20 text-[#F0EAE0] placeholder:text-[#F0EAE0]/30"
+              />
+              <Button
+                onClick={send}
+                disabled={loading || uploading || (!input.trim() && !attachedFiles.length)}
+                className="bg-[#C4A264] hover:bg-[#C4A264]/90 text-black"
+              >
+                {loading || uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </Button>
+            </div>
           </div>
         </div>
+
+        <MCPToolsPanel isOpen={mcpPanelOpen} onClose={closeMCPPanel} />
       </div>
     </div>
   );

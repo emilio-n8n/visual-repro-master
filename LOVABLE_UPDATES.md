@@ -165,3 +165,54 @@ Les nouveaux providers ont été ajoutés à l'arbre React :
 - Backend: Supabase (Postgres + RLS + Auth + Storage + Edge Functions)
 - IA: Google Gemini via OpenAI-compatible endpoint
 - Exports: docx, xlsx, jspdf, file-saver, html2canvas
+
+---
+
+## 10. Fonctionnalités Upload & MCP (2026-05-11)
+
+### Migration SQL à appliquer: `supabase/migrations/20260511160000_add_conversations_files_storage.sql`
+- Bucket `conversations-files` — stockage des fichiers/uploads dans les conversations
+- RLS policies: utilisateurs authentifiés peuvent uploader dans leur dossier `userId/`
+
+### Nouveaux Hooks
+- `src/hooks/useRenderMode.tsx` — Mode jour/nuit pour les renders
+- `src/hooks/useUploadProgress.ts` — Suivi progression upload avec AbortController
+- `src/hooks/useMCP.ts` — Intégration MCP tools
+- `src/hooks/useArtifactVersions.ts` — Historique des versions d'artifacts
+- `src/hooks/useCustomizableShortcuts.ts` — Raccourcis clavier personnalisables
+
+### Nouveaux Composants
+- `src/components/FileUploader.tsx` — Drag & drop pour images/fichiers (jpg, png, gif, webp, pdf)
+- `src/components/RenderModeToggle.tsx` — Toggle jour/nuit avec icône Soleil/Lune
+- `src/components/PresentationMode.tsx` — Vue plein écran avec navigation flèches (Ctrl+P)
+- `src/components/MCPToolsPanel.tsx` — Panel de gestion des tools MCP
+
+### Fonctionnalités MCP
+- Templates prédéfinis: Filesystem, Web Search, Calculator, Slack, GitHub, Notion
+- Configuration dans Settings → section "Outils MCP"
+- Ajout/suppression/activation de serveurs MCP personnalisés
+
+### Nouveaux Types
+- `src/lib/mcp-types.ts` — Types MCP (MCPServer, MCPTool, MCPToolCall)
+- `src/lib/mcp-config.ts` — Configuration et templates MCP
+- `src/lib/keybindings.ts` — Configuration par défaut des raccourcis clavier
+
+### Nouveaux Services
+- `src/services/mcp-service.ts` — Service de connexion/exécution des tools MCP
+
+---
+
+## 11. Refactorisation & Optimisations (2026-05-11)
+
+### Corrections
+- **KanbanBoard.tsx** — Bug critique corrigé (useState utilisé comme useEffect)
+- **api-utils.ts** — Conflit de nommage ApiError → FormaApiError
+
+### Optimisations Performance
+- `React.memo()` ajouté sur 7 composants (CommandPalette, ArtifactPreview, OfflineIndicator, ProjectSwitcher, DashboardLayout, KanbanBoard, MoodboardView)
+- `useCallback` pour les handlers dans KanbanBoard
+
+### Statut Final
+- Tests: 75/75 passent
+- Lint: 0 erreurs, 0 warnings
+- Build: Réussi

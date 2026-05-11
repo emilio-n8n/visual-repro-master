@@ -5,8 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, User, Building2, FileBox, Trash2, Download, ExternalLink, Users, Plus, Copy, Link2 } from "lucide-react";
+import { Loader2, User, Building2, FileBox, Trash2, Download, ExternalLink, Users, Plus, Copy, Link2, Keyboard, RotateCcw, Check, Plug, ChevronDown, ChevronUp, X, RefreshCw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { DEFAULT_KEYBINDINGS, loadKeybindings, saveKeybindings, resetKeybindings, formatShortcut, type Keybinding } from "@/lib/keybindings";
+import { useMCP } from "@/hooks/useMCP";
+import type { MCPServer } from "@/lib/mcp-types";
 
 type Profile = { id: string; full_name: string | null; avatar_url: string | null; locale: string | null };
 type Workspace = { id: string; name: string; slug: string; plan: string };
@@ -263,6 +266,9 @@ export default function Settings() {
         </div>
       </Section>
 
+      {/* Keyboard shortcuts */}
+      <KeyboardShortcutsSection />
+
       {/* Artifacts library */}
       <Section icon={FileBox} title={`Livrables (${artifacts.length})`}>
         {artifacts.length === 0 ? (
@@ -296,6 +302,9 @@ export default function Settings() {
         )}
       </Section>
 
+      {/* MCP Tools Section */}
+      <MCPSettingsSection />
+
       {/* Danger zone */}
       <Section icon={Trash2} title="Compte">
         <Button
@@ -307,6 +316,278 @@ export default function Settings() {
         </Button>
       </Section>
     </div>
+  );
+}
+
+/* Keyboard shortcuts section */
+const KEYBINDINGS_STORAGE_KEY = "forma_keybindings";
+
+function KeyboardShortcutsSection() {
+  const [keybindings, setKeybindings] = useState<Keybinding[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setKeybindings(loadKeybindings());
+  }, []);
+
+  function handleStartEdit(id: string, current: string) {
+    setEditingId(id);
+    setEditValue(current);
+  }
+
+  function handleSaveEdit(id: string) {
+    if (!editValue.trim()) return;
+    const parts = editValue.toLowerCase().split("+").map((p) => p.trim());
+    setKeybindings((prev) =>
+      prev.map((kb) =>
+        kb.id === id
+          ? {
+              ...kb,
+              ctrl: parts.includes("ctrl"),
+              shift: parts.includes("shift"),
+              alt: parts.includes("alt"),
+              key: parts[parts.length - 1],
+            }
+          : kb
+      )
+    );
+    setEditingId(null);
+    setSaved(false);
+  }
+
+  function handleSaveAll() {
+    saveKeybindings(keybindings);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+    toast({ title: "Raccourcis sauvegardés", description: "Les raccourcis seront appliques au prochain chargement." });
+  }
+
+  function handleReset() {
+    if (!confirm("Réinitialiser tous les raccourcis ?")) return;
+    setKeybindings(resetKeybindings());
+    setSaved(true);
+    toast({ title: "Raccourcis réinitialisés" });
+  }
+
+  return (
+    <Section icon={Keyboard} title="Raccourcis clavier">
+      <div className="space-y-3">
+        {keybindings.map((kb) => (
+          <div key={kb.id} className="flex items-center justify-between py-2 border-b border-[#C4A264]/10">
+            <span className="text-sm text-[#F0EAE0]/70">{kb.description}</span>
+            {editingId === kb.id ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSaveEdit(kb.id);
+                    if (e.key === "Escape") setEditingId(null);
+                  }}
+                  className="w-32 bg-black/40 border-[#C4A264]/20 text-[#F0EAE0] text-sm font-mono"
+                  autoFocus
+                />
+                <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(kb.id)} className="text-[#C4A264]">
+                  <Check className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <button
+                onClick={() => handleStartEdit(kb.id, formatShortcut(kb))}
+                className="px-3 py-1 text-xs font-mono bg-[#1a1a1a] border border-[#C4A264]/20 rounded text-[#C4A264] hover:border-[#C4A264]/50 transition-colors"
+              >
+                {formatShortcut(kb)}
+              </button>
+            )}
+          </div>
+        ))}
+
+        <div className="flex items-center gap-3 pt-4">
+          <Button size="sm" onClick={handleSaveAll} className="bg-[#C4A264] text-black">
+            {saved ? <Check className="w-4 h-4 mr-2" /> : null}
+            Sauvegarder
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleReset} className="border-[#C4A264]/30 text-[#F0EAE0]">
+            <RotateCcw className="w-4 h-4 mr-2" /> Réinitialiser
+          </Button>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+/* MCP Tools Settings Section */
+function MCPSettingsSection() {
+  const { servers, tools, templates, loading, connect, disconnect, removeServer, toggleServer, addFromTemplate, refresh } = useMCP();
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const connectedCount = servers.filter(s => s.enabled && s.status === "connected").length;
+
+  return (
+    <Section icon={Plug} title={`Outils MCP (${servers.length})`}>
+      <div className="space-y-4">
+        {servers.length === 0 ? (
+          <div className="text-center py-8 border border-dashed border-[#C4A264]/15 rounded-sm">
+            <Plug className="w-8 h-8 text-[#C4A264]/30 mx-auto mb-3" />
+            <p className="text-sm text-[#F0EAE0]/50">Aucun serveur MCP configuré</p>
+            <p className="text-xs text-[#F0EAE0]/30 mt-1 mb-4">
+              Ajoutez des outils externes pour étendre les capacités de l'agent
+            </p>
+            <Button
+              size="sm"
+              onClick={() => setShowAddModal(true)}
+              className="bg-[#C4A264] text-black hover:bg-[#C4A264]/90"
+            >
+              <Plus className="w-3 h-3 mr-1" /> Ajouter un serveur
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-[#F0EAE0]/50">
+                  {connectedCount > 0 ? (
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                      {connectedCount} connecté{connectedCount > 1 ? "s" : ""}
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#F0EAE0]/20" />
+                      Déconnecté
+                    </span>
+                  )}
+                </span>
+                <span className="text-xs text-[#F0EAE0]/30">{tools.length} outils disponibles</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={refresh}
+                  className="h-8 px-2 text-[#F0EAE0]/60 hover:text-[#C4A264]"
+                  title="Rafraîchir"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowAddModal(true)}
+                  className="border-[#C4A264]/30 text-[#C4A264] hover:bg-[#C4A264]/10 h-8"
+                >
+                  <Plus className="w-3 h-3 mr-1" /> Ajouter
+                </Button>
+              </div>
+            </div>
+
+            <div className="divide-y divide-[#C4A264]/10 border border-[#C4A264]/15 rounded-sm">
+              {servers.map((server) => (
+                <div key={server.id} className="flex items-center justify-between px-4 py-3 hover:bg-white/5">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${
+                      server.status === "connected" ? "bg-green-500" :
+                      server.status === "error" ? "bg-red-500" :
+                      server.status === "connecting" ? "bg-yellow-500 animate-pulse" :
+                      "bg-[#F0EAE0]/20"
+                    }`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm text-[#F0EAE0] truncate">{server.name}</div>
+                      <div className="text-[10px] text-[#F0EAE0]/40 truncate">
+                        {server.description}
+                        {server.lastError && ` · ${server.lastError}`}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 ml-4">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => toggleServer(server.id)}
+                      className={`h-8 px-2 ${server.enabled ? "text-green-400" : "text-[#F0EAE0]/40"}`}
+                      title={server.enabled ? "Désactiver" : "Activer"}
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                    </Button>
+                    {server.status === "connected" ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => disconnect(server.id)}
+                        disabled={loading}
+                        className="h-8 px-2 text-[#F0EAE0]/60 hover:text-[#C4A264]"
+                        title="Déconnecter"
+                      >
+                        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => connect(server.id)}
+                        disabled={loading}
+                        className="h-8 px-2 text-[#F0EAE0]/60 hover:text-[#C4A264]"
+                        title="Connecter"
+                      >
+                        <Plug className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        if (confirm(`Supprimer ${server.name} ?`)) removeServer(server.id);
+                      }}
+                      className="h-8 px-2 text-[#F0EAE0]/40 hover:text-red-400"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Add Server Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-[#0f0f0f] border border-[#C4A264]/20 rounded-sm w-full max-w-lg">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#C4A264]/15">
+              <h3 className="text-[#C4A264]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                Ajouter un serveur MCP
+              </h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowAddModal(false)} className="text-[#F0EAE0]/60">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                {templates.map((template) => (
+                  <button
+                    key={template.id}
+                    onClick={() => {
+                      addFromTemplate(template);
+                      toast({ title: "Serveur ajouté", description: `${template.name} a été ajouté.` });
+                      setShowAddModal(false);
+                    }}
+                    className="p-3 text-left rounded-sm border border-[#C4A264]/15 bg-black/20 hover:border-[#C4A264]/30 transition-colors"
+                  >
+                    <div className="text-sm text-[#F0EAE0]">{template.name}</div>
+                    <div className="text-xs text-[#F0EAE0]/40 mt-1">{template.description}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </Section>
   );
 }
 

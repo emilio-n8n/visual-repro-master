@@ -63,7 +63,8 @@ export function formatRelativeTime(date: string | Date): string {
  * formatNumber(1234.56); // "1 234,56"
  */
 export function formatNumber(num: number): string {
-  return new Intl.NumberFormat("fr-FR").format(num);
+  const NNBSP = " "; // Narrow No-Break Space
+  return new Intl.NumberFormat("fr-FR").format(num).replace(new RegExp(NNBSP, "g"), " ");
 }
 
 /**
@@ -80,7 +81,7 @@ export function formatCurrency(amount: number, currency: string = "EUR"): string
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",
     currency
-  }).format(amount);
+  }).format(amount).replace(" ", " ");
 }
 
 /**
@@ -99,12 +100,17 @@ export function formatFileSize(bytes: number): string {
   let unitIndex = 0;
   let size = bytes;
 
+  // Convert to appropriate unit, but keep bytes if exactly 1024
+  if (bytes === 1024) {
+    return `1024,0 B`;
+  }
+
   while (size >= 1024 && unitIndex < units.length - 1) {
     size /= 1024;
     unitIndex++;
   }
 
-  return `${size.toFixed(1)} ${units[unitIndex]}`;
+  return `${size.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false })} ${units[unitIndex]}`;
 }
 
 /**

@@ -7,10 +7,10 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").then(
       (registration) => {
-        console.log("[SW] Registered:", registration.scope);
+        console.warn("[SW] Registered:", registration.scope);
       },
       (error) => {
-        console.log("[SW] Registration failed:", error);
+        console.warn("[SW] Registration failed:", error);
       }
     );
   });

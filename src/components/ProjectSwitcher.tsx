@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,7 +27,7 @@ type ProjectForm = {
   brief: string;
 };
 
-export function ProjectSwitcher() {
+export const ProjectSwitcher = memo(function ProjectSwitcher() {
   const { user } = useAuth();
   const { workspace, projects, activeProjectId, setActiveProjectId, refresh } = useWorkspace();
   const [open, setOpen] = useState(false);
@@ -201,4 +201,4 @@ export function ProjectSwitcher() {
       </DialogContent>
     </Dialog>
   );
-}
+});

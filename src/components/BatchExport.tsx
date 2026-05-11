@@ -20,7 +20,7 @@ export function BatchExportButton({ projectId }: { projectId: string | null }) {
     setExporting(true);
     try {
       // Fetch all artifacts
-      let query = supabase
+      const query = supabase
         .from("artifacts")
         .select("id, type, title, content, mime_type")
         .eq("workspace_id", projectId);

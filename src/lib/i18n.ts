@@ -155,6 +155,7 @@ export function detectLanguage(): string {
  */
 export function getLanguage(): string {
   if (typeof window === "undefined") return "fr";
+  if (typeof localStorage === "undefined") return "fr";
   return localStorage.getItem("forma-language") || detectLanguage();
 }
 
