@@ -196,7 +196,7 @@ export function SearchBar({
               setResults([]);
               inputRef.current?.focus();
             }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#F0EAE0]/50 hover:text-[#F0EAE0]"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#F0EAE0]/50 hover:text-[#C4A264]"
           >
             <X className="w-4 h-4" />
           </button>
@@ -250,7 +250,7 @@ export function SearchBar({
                   </span>
                   <button
                     onClick={handleClearHistory}
-                    className="text-xs text-[#F0EAE0]/50 hover:text-[#F0EAE0] flex items-center gap-1"
+                    className="text-xs text-[#F0EAE0]/50 hover:text-[#C4A264] flex items-center gap-1"
                   >
                     <Trash2 className="w-3 h-3" />
                     Effacer

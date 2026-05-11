@@ -13,7 +13,7 @@ export function NotificationCenter() {
         variant="ghost"
         size="sm"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative text-[#F0EAE0]/70 hover:text-[#F0EAE0]"
+        className="relative text-[#F0EAE0]/70 hover:text-[#C4A264]"
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (

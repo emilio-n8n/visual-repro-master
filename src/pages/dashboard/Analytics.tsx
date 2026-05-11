@@ -174,7 +174,7 @@ export default function Analytics() {
           <div>
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2 text-[#F0EAE0]/60 hover:text-[#F0EAE0] mb-2"
+              className="flex items-center gap-2 text-[#F0EAE0]/60 hover:text-[#C4A264] mb-2"
             >
               <ArrowLeft className="w-4 h-4" />
               Retour
@@ -197,7 +197,7 @@ export default function Analytics() {
                   className={`px-3 py-1.5 rounded text-sm transition-all ${
                     timeRange === range
                       ? "bg-[#C4A264] text-black"
-                      : "text-[#F0EAE0]/60 hover:text-[#F0EAE0]"
+                      : "text-[#F0EAE0]/60 hover:text-[#C4A264]"
                   }`}
                 >
                   {range === "7d" ? "7 jours" : range === "30d" ? "30 jours" : "90 jours"}

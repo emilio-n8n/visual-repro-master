@@ -91,8 +91,8 @@ export function useMCP() {
     toggleMCPServer(serverId);
   }, []);
 
-  // Get tools for AI model
-  const toolsForModel = useCallback(() => {
+  // Get tools for AI model (direct accessor, not a callable function)
+  const getTools = useCallback(() => {
     return getToolsForModel();
   }, []);
 
@@ -115,7 +115,7 @@ export function useMCP() {
     addCustomServer,
     removeServer,
     toggleServer,
-    getToolsForModel: toolsForModel,
+    getToolsForModel: getTools,
     refresh,
   };
 }

@@ -151,7 +151,7 @@ function StudioHeader({ artifact, onBack, saving, onShowVersions, versionsSaving
 
   return (
     <header className="h-14 border-b border-[#C4A264]/15 px-4 flex items-center gap-3 bg-[#0a0a0a] shrink-0">
-      <Button variant="ghost" size="sm" onClick={onBack} className="text-[#F0EAE0]/70 hover:text-[#F0EAE0]">
+      <Button variant="ghost" size="sm" onClick={onBack} className="text-[#F0EAE0]/70 hover:text-[#C4A264]">
         <ArrowLeft className="w-4 h-4" />
       </Button>
       <div className="flex items-center gap-2 text-[#C4A264]">
@@ -207,7 +207,7 @@ function VersionsModal({
             <History className="w-5 h-5 text-[#C4A264]" />
             Historique des versions
           </h2>
-          <Button variant="ghost" size="sm" onClick={onClose} className="text-[#F0EAE0]/70 hover:text-[#F0EAE0]">
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-[#F0EAE0]/70 hover:text-[#C4A264]">
             <X className="w-5 h-5" />
           </Button>
         </div>

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useRenderMode } from "@/hooks/useRenderMode";
 import { useUploadProgress } from "@/hooks/useUploadProgress";
 import { Button } from "@/components/ui/button";
@@ -45,7 +44,6 @@ const NIGHT_BG = "bg-gradient-to-b from-[#0a0a12] to-[#050508]";
 
 export default function RenderPage() {
   const { user } = useAuth();
-  const { permission, sendTestNotification } = usePushNotifications();
   const { mode: renderMode } = useRenderMode();
   const { progress, fileName, isUploading, upload, reset: resetUpload } = useUploadProgress();
 
@@ -85,9 +83,6 @@ export default function RenderPage() {
           if (newRender.status === "completed" && payload.eventType === "UPDATE") {
             const prevRender = payload.old as Render;
             if (prevRender && prevRender.status !== "completed") {
-              console.warn("[Render] Render completed, sending notification");
-              // Send browser notification
-              sendTestNotification("new_render");
               toast.success("Votre rendu est prêt !");
             }
           }
@@ -396,7 +391,7 @@ export default function RenderPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className="absolute top-4 right-4 text-[#F0EAE0]/50 hover:text-[#F0EAE0]"
+              className="absolute top-4 right-4 text-[#F0EAE0]/50 hover:text-[#C4A264]"
               onClick={() => setModifyTarget(null)}
               disabled={modifying}
             >

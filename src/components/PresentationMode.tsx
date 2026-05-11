@@ -156,7 +156,7 @@ export function PresentationMode({
 
           <button
             onClick={onClose}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-[#F0EAE0]/80 hover:text-[#F0EAE0] transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-[#F0EAE0]/80 hover:text-[#C4A264] transition-colors"
           >
             <X className="w-4 h-4" />
             Fermer

@@ -74,6 +74,9 @@ export async function connectToServer(serverId: string): Promise<{ success: bool
 
     // Mock tool discovery based on server type
     const tools = discoverMockTools(server);
+
+    // Update cache BEFORE sending "connected" notification
+    // so getAvailableTools() sees the updated tools in the callback
     toolCache.set(serverId, tools);
 
     updateServerStatus(serverId, "connected");

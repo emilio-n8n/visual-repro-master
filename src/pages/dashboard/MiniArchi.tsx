@@ -216,7 +216,7 @@ export default function MiniArchi() {
       <div className="min-h-screen bg-[#0b0b0b] text-[#F0EAE0] p-8">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-[#F0EAE0]/60 hover:text-[#F0EAE0] mb-8"
+          className="flex items-center gap-2 text-[#F0EAE0]/60 hover:text-[#C4A264] mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
           Retour
@@ -323,7 +323,7 @@ export default function MiniArchi() {
           <div>
             <button
               onClick={() => setStep("constraints")}
-              className="flex items-center gap-2 text-[#F0EAE0]/60 hover:text-[#F0EAE0] mb-2"
+              className="flex items-center gap-2 text-[#F0EAE0]/60 hover:text-[#C4A264] mb-2"
             >
               <ArrowLeft className="w-4 h-4" />
               Modifier les contraintes
@@ -394,7 +394,7 @@ export default function MiniArchi() {
           <div>
             <button
               onClick={() => setStep("plans")}
-              className="flex items-center gap-2 text-[#F0EAE0]/60 hover:text-[#F0EAE0] mb-2"
+              className="flex items-center gap-2 text-[#F0EAE0]/60 hover:text-[#C4A264] mb-2"
             >
               <ArrowLeft className="w-4 h-4" />
               Retour aux plans
@@ -499,7 +499,7 @@ export default function MiniArchi() {
           <div>
             <button
               onClick={() => setStep("plans")}
-              className="flex items-center gap-2 text-[#F0EAE0]/60 hover:text-[#F0EAE0] mb-2"
+              className="flex items-center gap-2 text-[#F0EAE0]/60 hover:text-[#C4A264] mb-2"
             >
               <ArrowLeft className="w-4 h-4" />
               Retour aux plans
@@ -587,7 +587,7 @@ export default function MiniArchi() {
           <div>
             <button
               onClick={() => setStep("plans")}
-              className="flex items-center gap-2 text-[#F0EAE0]/60 hover:text-[#F0EAE0] mb-2"
+              className="flex items-center gap-2 text-[#F0EAE0]/60 hover:text-[#C4A264] mb-2"
             >
               <ArrowLeft className="w-4 h-4" />
               Retour aux plans
@@ -617,7 +617,7 @@ export default function MiniArchi() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setIsRotating(!isRotating)}
-                      className="text-[#F0EAE0]/50 hover:text-[#F0EAE0]"
+                      className="text-[#F0EAE0]/50 hover:text-[#C4A264]"
                     >
                       <RotateCw className={`w-4 h-4 ${isRotating ? "animate-spin" : ""}`} />
                     </Button>

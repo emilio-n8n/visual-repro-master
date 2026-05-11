@@ -41,7 +41,7 @@ export function MCPToolsPanel({ isOpen, onClose }: MCPToolsPanelProps) {
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose} className="text-[#F0EAE0]/60 hover:text-[#F0EAE0]">
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-[#F0EAE0]/60 hover:text-[#C4A264]">
             <X className="w-4 h-4" />
           </Button>
         </div>

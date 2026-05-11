@@ -58,7 +58,7 @@ export function ShareButton({ entityType, entityId, entityTitle }: ShareButtonPr
       <div className="bg-[#1a1a1a] border border-[#C4A264]/30 rounded-lg w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-[#F0EAE0]">Partager {entityTitle || entityType}</h3>
-          <button onClick={closeModal} className="text-[#F0EAE0]/50 hover:text-[#F0EAE0]">
+          <button onClick={closeModal} className="text-[#F0EAE0]/50 hover:text-[#C4A264]">
             <X className="w-5 h-5" />
           </button>
         </div>

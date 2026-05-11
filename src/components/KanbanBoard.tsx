@@ -120,7 +120,7 @@ export const KanbanBoard = memo(function KanbanBoard() {
                     <h4 className="text-sm text-[#F0EAE0] font-medium">
                       {project.name}
                     </h4>
-                    <button className="opacity-0 group-hover:opacity-100 text-[#F0EAE0]/50 hover:text-[#F0EAE0]">
+                    <button className="opacity-0 group-hover:opacity-100 text-[#F0EAE0]/50 hover:text-[#C4A264]">
                       <MoreHorizontal className="w-4 h-4" />
                     </button>
                   </div>

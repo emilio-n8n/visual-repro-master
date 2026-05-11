@@ -62,7 +62,7 @@ export function WelcomeTour() {
           <h3 className="text-[#C4A264] font-medium">{step.title}</h3>
           <button
             onClick={handleClose}
-            className="text-[#F0EAE0]/50 hover:text-[#F0EAE0]"
+            className="text-[#F0EAE0]/50 hover:text-[#C4A264]"
             aria-label="Fermer"
           >
             <X className="w-4 h-4" />
