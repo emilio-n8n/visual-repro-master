@@ -1,8 +1,25 @@
-// Internationalization utilities for FORMA
+/**
+ * @fileoverview Utilitaires d'internationalisation (i18n) pour FORMA
+ * Ce module gère la traduction de l'interface utilisateur entre le français et l'anglais,
+ * avec détection automatique de la langue du navigateur et stockage local.
+ */
 
-type TranslationKey = string;
-type TranslationValue = string;
-type Translations = Record<TranslationKey, TranslationValue>;
+/**
+ * Clé de traduction représentant un identifiant de texte dans l'interface.
+ * @typedef {string} TranslationKey
+ * Format: "section.sous-section.texte" (ex: "nav.dashboard", "action.save")
+ */
+
+/**
+ * Valeur de traduction correspondant au texte traduit dans une langue donnée.
+ * @typedef {string} TranslationValue
+ */
+
+/**
+ * Ensemble des traductions pour une langue spécifique.
+ * Correspond à un objet JSON contenant toutes les clés-valeurs pour une locale.
+ * @typedef {Record<TranslationKey, TranslationValue>} Translations
+ */
 
 const translations: Record<string, Translations> = {
   fr: {
@@ -108,7 +125,18 @@ const translations: Record<string, Translations> = {
   },
 };
 
-// Detect browser language
+/**
+ * Détecte la langue du navigateur de l'utilisateur.
+ * Extrait la langue principale du navigateur (ex: "fr" de "fr-FR") et vérifie
+ * si elle est支持ée par l'application. Retourne "fr" par défaut si non supportée.
+ * @returns {string} Code de langue supportée ("fr" ou "en")
+ * @example
+ * // En supposant que le navigateur est configuré en anglais américain
+ * const lang = detectLanguage(); // "en"
+ * @example
+ * // Si le navigateur est en chinois (non supporté)
+ * const lang = detectLanguage(); // "fr" (fallback)
+ */
 export function detectLanguage(): string {
   if (typeof window === "undefined") return "fr";
 
@@ -116,25 +144,79 @@ export function detectLanguage(): string {
   return translations[browserLang] ? browserLang : "fr";
 }
 
-// Get current language (from localStorage or default)
+/**
+ * Récupère la langue actuellement active pour l'utilisateur.
+ * Vérifie d'abord le stockage local (localStorage), puis utilise detectLanguage()
+ * comme valeur par défaut. Retourne "fr" côté serveur (SSR).
+ * @returns {string} Code de langue actuellement active
+ * @example
+ * // Retourne la langue sauvegardée ou détectée
+ * const currentLang = getLanguage(); // "fr" ou "en"
+ */
 export function getLanguage(): string {
   if (typeof window === "undefined") return "fr";
   return localStorage.getItem("forma-language") || detectLanguage();
 }
 
-// Set language
+/**
+ * Définit la langue de l'utilisateur et la persist dans le stockage local.
+ * Cette fonction Met à jour la préférence de langue pour les prochaines visites.
+ * Ne fait rien côté serveur (SSR) car localStorage n'est pas disponible.
+ * @param {string} lang - Code de langue à activer ("fr" ou "en")
+ * @returns {void}
+ * @example
+ * // Changer la langue en anglais
+ * setLanguage("en");
+ * // La prochaine requête getLanguage() retournera "en"
+ */
 export function setLanguage(lang: string): void {
   if (typeof window === "undefined") return;
   localStorage.setItem("forma-language", lang);
 }
 
-// Translation function
+/**
+ * Fonction principale de traduction.
+ * Retourne la traduction correspondant à la clé fournie dans la langue cible.
+ * Si la traduction n'existe pas, retourne la clé elle-même (fallback).
+ * Si la traduction n'existe pas dans la langue cible, fallback sur le français.
+ * @param {string} key - Clé de traduction (format: "section.sous-section.texte")
+ * @param {string} [lang] - Langue cible optionnelle (si non fournie, utilise la langue active)
+ * @returns {string} Texte traduit ou clé originale si non trouvé
+ * @example
+ * // Traduction simple
+ * t("nav.dashboard"); // "Tableau de bord" (si langue = fr)
+ * @example
+ * // Avec langue forcée
+ * t("action.save", "en"); // "Save"
+ * @example
+ * // Clé inexistante retourne la clé itself
+ * t("custom.key"); // "custom.key"
+ */
 export function t(key: string, lang?: string): string {
   const currentLang = lang || getLanguage();
   return translations[currentLang]?.[key] || translations["fr"]?.[key] || key;
 }
 
-// Hook for using translations in components
+/**
+ * Hook React pour utiliser les traductions dans les composants.
+ * Retourne un objet contenant la fonction de traduction, la langue actuelle,
+ * et la fonction pour changer de langue. À utiliser dans les composants fonctionnels.
+ * @returns {Object} Objet contenant les méthodes de traduction
+ * @returns {function} t - Fonction de traduction (key: string, lang?: string) => string
+ * @returns {string} language - Code de langue actuellement active
+ * @returns {function} setLanguage - Fonction pour changer la langue (lang: string) => void
+ * @example
+ * // Dans un composant React
+ * function Header() {
+ *   const { t, language, setLanguage } = useTranslation();
+ *   return (
+ *     <nav>
+ *       <span>{t("nav.dashboard")}</span>
+ *       <button onClick={() => setLanguage("en")}>English</button>
+ *     </nav>
+ *   );
+ * }
+ */
 export function useTranslation() {
   return { t, language: getLanguage(), setLanguage };
 }

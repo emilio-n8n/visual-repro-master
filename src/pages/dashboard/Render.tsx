@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -27,6 +28,7 @@ const STYLES = [
 
 export default function RenderPage() {
   const { user } = useAuth();
+  const { permission, sendTestNotification } = usePushNotifications();
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [style, setStyle] = useState("photoreal");
@@ -56,10 +58,23 @@ export default function RenderPage() {
         "postgres_changes",
         { event: "*", schema: "public", table: "renders", filter: `user_id=eq.${user.id}` },
         (payload) => {
+          const newRender = payload.new as Render;
+
+          // Check if render just completed - send notification
+          if (newRender.status === "completed" && payload.eventType === "UPDATE") {
+            const prevRender = payload.old as Render;
+            if (prevRender && prevRender.status !== "completed") {
+              console.log("[Render] Render completed, sending notification");
+              // Send browser notification
+              sendTestNotification("new_render");
+              toast.success("Votre rendu est prêt !");
+            }
+          }
+
           setRenders((curr) => {
             if (payload.eventType === "DELETE")
               return curr.filter((r) => r.id !== (payload.old as Render).id);
-            const row = payload.new as Render;
+            const row = newRender;
             const idx = curr.findIndex((r) => r.id === row.id);
             if (idx === -1) return [row, ...curr];
             const next = curr.slice();

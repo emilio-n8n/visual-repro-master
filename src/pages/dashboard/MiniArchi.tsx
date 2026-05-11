@@ -19,7 +19,10 @@ import {
   GitCompare,
   Download,
   RotateCw,
+  FileText,
+  FileBox,
 } from "lucide-react";
+import { exportBudgetPDF, exportPlanSTL, exportPlanOBJ, downloadText } from "@/lib/export-utils";
 
 type FloorPlan = {
   id: string;
@@ -141,8 +144,27 @@ export default function MiniArchi() {
     setStep("budget");
   };
 
-  const exportSTL = () => {
-    alert("Export STL: Cette fonctionnalité génère un fichier STL pour impression 3D.\n\nIntégration Three.js requise pour l'export réel.");
+  const handleExportSTL = (plan: FloorPlan) => {
+    const stlContent = exportPlanSTL(plan.svg);
+    downloadText(stlContent, `plan_${plan.title.replace(/\s+/g, "_")}.stl`, "application/sla");
+  };
+
+  const handleExportOBJ = (plan: FloorPlan) => {
+    const objContent = exportPlanOBJ(plan.svg);
+    downloadText(objContent, `plan_${plan.title.replace(/\s+/g, "_")}.obj`, "model/obj");
+  };
+
+  const handleExportBudgetPDF = async () => {
+    const budgetData = calculateBudget();
+    const pdfBlob = await exportBudgetPDF(budgetData, surface || "150m²", budgetLevel);
+    const url = URL.createObjectURL(pdfBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `budget_estimation_${new Date().toISOString().split("T")[0]}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Calculate budget estimate
