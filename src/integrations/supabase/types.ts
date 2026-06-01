@@ -122,6 +122,36 @@ export type Database = {
         }
         Relationships: []
       }
+      comments: {
+        Row: {
+          artifact_id: string | null
+          content: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          render_id: string | null
+          user_id: string
+        }
+        Insert: {
+          artifact_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          render_id?: string | null
+          user_id: string
+        }
+        Update: {
+          artifact_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          render_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
@@ -149,6 +179,27 @@ export type Database = {
           updated_at?: string
           user_id?: string
           workspace_id?: string | null
+        }
+        Relationships: []
+      }
+      favorites: {
+        Row: {
+          artifact_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          artifact_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          artifact_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -451,6 +502,39 @@ export type Database = {
           status?: string
           updated_at?: string
           workspace_id?: string
+        }
+        Relationships: []
+      }
+      templates: {
+        Row: {
+          content: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
