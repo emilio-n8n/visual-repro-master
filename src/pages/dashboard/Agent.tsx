@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Send, Plus, MessageSquare, Loader2, FolderOpen, Plug, ChevronDown, ChevronUp } from "lucide-react";
 import { ArtifactPreview } from "@/components/ArtifactPreview";
+import { ArtifactQuickGrid, ArtifactQuickChips } from "@/components/ArtifactQuickActions";
 import { FileUploader, AttachmentDisplay, uploadAttachments } from "@/components/FileUploader";
 import { MCPToolsPanel } from "@/components/MCPToolsPanel";
 
@@ -365,14 +366,7 @@ export default function Agent() {
 
         <div ref={scrollRef} className="flex-1 overflow-auto px-8 py-6 space-y-6">
           {messages.length === 0 && (
-            <div className="text-center text-[#F0EAE0]/40 mt-20">
-              <p style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-xl">
-                Commencez la conversation.
-              </p>
-              <p className="text-xs mt-2">
-                Décrivez une ambiance, demandez un rendu, ou explorez un style.
-              </p>
-            </div>
+            <ArtifactQuickGrid onPick={(p) => setInput(p)} />
           )}
           {messages
             .filter((m) => m.role === "user" || m.role === "assistant")
@@ -409,6 +403,7 @@ export default function Agent() {
 
         <div className="border-t border-[#C4A264]/15 p-4">
           <div className="space-y-3">
+            <ArtifactQuickChips onPick={(p) => setInput((cur) => (cur ? cur : p))} />
             <FileUploader
               onFilesChange={setAttachedFiles}
               attachedFiles={attachedFiles}
