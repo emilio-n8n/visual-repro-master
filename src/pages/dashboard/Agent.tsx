@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Send, Plus, MessageSquare, Loader2, FolderOpen, Plug, ChevronDown, ChevronUp } from "lucide-react";
 import { ArtifactPreview } from "@/components/ArtifactPreview";
+import { ArtifactQuickGrid, ArtifactQuickChips } from "@/components/ArtifactQuickActions";
 import { FileUploader, AttachmentDisplay, uploadAttachments } from "@/components/FileUploader";
 import { MCPToolsPanel } from "@/components/MCPToolsPanel";
 
