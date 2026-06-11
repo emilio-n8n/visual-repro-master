@@ -403,6 +403,7 @@ export default function Agent() {
 
         <div className="border-t border-[#C4A264]/15 p-4">
           <div className="space-y-3">
+            <ArtifactQuickChips onPick={(p) => setInput((cur) => (cur ? cur : p))} />
             <FileUploader
               onFilesChange={setAttachedFiles}
               attachedFiles={attachedFiles}
